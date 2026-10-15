@@ -40,9 +40,11 @@ table{border-collapse:collapse;width:100%}
 td,th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 th{font-weight:600;font-size:12px;color:var(--muted)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-td.u{color:var(--muted);font-size:12px;white-space:nowrap}
+td.u{color:var(--muted);font-size:12px}
 input,select{font:inherit;color:var(--inputInk);background:var(--input);border:1px solid var(--line);border-radius:4px;padding:3px 6px;width:100%;min-width:0}
 input[type=number]{text-align:right}
+#aBolt input{min-width:52px}
+#asmGrid select{min-width:140px}
 .res td.n{font-weight:600}
 .big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .kpi{background:var(--result);border-radius:6px;padding:8px 10px}

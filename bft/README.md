@@ -13,6 +13,8 @@ An Excel workbook and a web page with identical logic.
 | `web/bft_estimator_v1.6.html` | Web tool v1.6 |
 | `Battery_Fuse_Block_Cost_Estimator_v1.7.xlsx` | v1.7, built by `tools/build_v1_7.py` (runs the v1.6 build, then applies v1.7) |
 | `web/bft_estimator_v1.7.html` | Web tool v1.7 |
+| `Battery_Fuse_Block_Cost_Estimator_v1.8.xlsx` | v1.8, built by `tools/build_v1_8.py` (runs the v1.7 build, then applies v1.8) |
+| `web/bft_estimator_v1.8.html` | Web tool v1.8 |
 | `tests/` | Checks that the web tool and the workbook agree |
 
 ## v1.4 changes
@@ -55,6 +57,14 @@ The Keepout Zones sheet is replaced by a **Layout** sheet (web tab "Layout"):
 - **Output-side cover skirt drop** (Assumptions B77, 20 mm placeholder). The cover skirt over the outputs reaches below the eyelet's conductive area to keep it isolated from ground. This adds cover volume, and Estimator E67 shows how far the skirt reaches below the base floor.
 - **Busbar Sizer chart fixed in Excel.** It was empty because the file had no cached values (Excel Protected View shows blanks) and the chart XML was incomplete. The build now writes cached values and a complete chart. MINIFS (Excel 2019+) is replaced by a helper column (I26:I37).
 
+## v1.8 changes
+
+- **Bus sized by the temperature limit** (Assumptions B80, default "Temperature limit"). The bus width is chosen so that the bus reaches the max bus temperature (Assumptions B69, 150 C) at the load and ambient. "Current density" keeps the v1.7 sizing. The bolt width is a minimum either way. The ampacity model has no closed form for width, so Layout rows 100 to 107 solve it with 6 Newton steps, and the web tool does the same. Zone branches stay sized by current density.
+- **Copper scrap credit placeholder is 50%** (Assumptions B66). Set it with manufacturing.
+- The OVER flag on the bus temperature needs more than 0.05 C over the limit, because temperature-limit sizing lands exactly on it.
+
+With zones off, 0% scrap credit and 105 C ambient, the bus is 34.8 mm wide (37.5 mm in v1.7) and the part costs $6.69. At 85 C it is 26.9 mm wide and costs $6.39. These results depend on k = 5.95, which is not calibrated.
+
 ## Rebuild and check
 
 ```
@@ -70,4 +80,7 @@ node bft/tests/compare_web_to_excel_v1_6.js                                 # v1
 python bft/tools/build_v1_7.py                                               # also writes cached values (needs LibreOffice)
 python bft/tests/excel_recalc_v1_7.py bft/tests/cases_v1_7.json > bft/tests/excel_results_v1_7.json
 node bft/tests/compare_web_to_excel_v1_7.js                                 # v1.7: 4900/4900 values must match
+python bft/tools/build_v1_8.py
+python bft/tests/excel_recalc_v1_8.py bft/tests/cases_v1_8.json > bft/tests/excel_results_v1_8.json
+node bft/tests/compare_web_to_excel_v1_8.js                                 # v1.8: 6225/6225 values must match
 ```
