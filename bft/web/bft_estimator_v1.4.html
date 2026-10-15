@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BFT Cost Estimator v1.4</title>
+<style>
+:root{
+  --bg:#f6f7f9;--panel:#ffffff;--ink:#1b2430;--muted:#5d6876;--line:#d9dee5;
+  --head:#1f3a4d;--headInk:#ffffff;--input:#fff9c4;--inputInk:#0000c8;--result:#e8f3e8;
+  --cu:#c77b30;--cuFill:#e9b27a;--zone:#6b8fb3;--zoneFill:#dce8f4;--fuse:#8b96a3;--fuseFill:#eef0f3;
+  --stud:#333b45;--warn:#a5402d;--good:#2e7d32;--accent:#2f6fa8;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a21;--panel:#1c242d;--ink:#e6ebf0;--muted:#9aa6b3;--line:#33404d;
+  --head:#2b4f68;--headInk:#ffffff;--input:#3a3720;--inputInk:#9fc1ff;--result:#1f3324;
+  --cu:#e09a55;--cuFill:#7a4f26;--zone:#8fb1d4;--zoneFill:#253546;--fuse:#7d8995;--fuseFill:#26303a;
+  --stud:#c9d1da;--warn:#ff8a73;--good:#7bc77f;--accent:#7fb2e5;
+}}
+:root[data-theme="dark"]{
+  --bg:#141a21;--panel:#1c242d;--ink:#e6ebf0;--muted:#9aa6b3;--line:#33404d;
+  --head:#2b4f68;--headInk:#ffffff;--input:#3a3720;--inputInk:#9fc1ff;--result:#1f3324;
+  --cu:#e09a55;--cuFill:#7a4f26;--zone:#8fb1d4;--zoneFill:#253546;--fuse:#7d8995;--fuseFill:#26303a;
+  --stud:#c9d1da;--warn:#ff8a73;--good:#7bc77f;--accent:#7fb2e5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{padding:16px 16px 8px;max-width:1200px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:12px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1200px;margin:8px auto 0;padding:0 16px}
+nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;border-radius:6px 6px 0 0;cursor:pointer;font:inherit}
+nav button.on{background:var(--head);color:var(--headInk);border-color:var(--head)}
+main{max-width:1200px;margin:0 auto;padding:0 16px 32px}
+section.tab{display:none}section.tab.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0}
+.card h2{font-size:13px;margin:-12px -12px 10px;padding:7px 12px;background:var(--head);color:var(--headInk);border-radius:8px 8px 0 0;letter-spacing:.03em}
+table{border-collapse:collapse;width:100%}
+td,th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-weight:600;font-size:12px;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.u{color:var(--muted);font-size:12px;white-space:nowrap}
+input,select{font:inherit;color:var(--inputInk);background:var(--input);border:1px solid var(--line);border-radius:4px;padding:3px 6px;width:100%;min-width:0}
+input[type=number]{text-align:right}
+.res td.n{font-weight:600}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kpi{background:var(--result);border-radius:6px;padding:8px 10px}
+.kpi .l{font-size:12px;color:var(--muted)}.kpi .v{font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+svg{display:block;width:100%;height:auto}
+.note{color:var(--muted);font-size:12px;margin:6px 0 0}
+.yes{color:var(--good);font-weight:600}.no{color:var(--warn);font-weight:600}
+tr.best td{background:var(--result)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Battery Fuse Block (BFT) Cost Estimator <span class="sub">v1.4</span></h1>
+  <div class="sub">Same logic as Battery_Fuse_Block_Cost_Estimator_v1.4.xlsx. Yellow fields are inputs. Dimensions in mm, mass in g, cost in $. All assumptions are placeholders.</div>
+</header>
+<nav id="nav">
+  <button data-t="est" class="on">Estimator</button>
+  <button data-t="kz">Keepout zones</button>
+  <button data-t="bs">Busbar sizer</button>
+  <button data-t="asm">Assumptions</button>
+</nav>
+<main>
+<section class="tab on" id="t-est">
+  <div class="grid">
+    <div class="card"><h2>RESULT</h2><div class="big" id="kpis"></div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>INPUTS</h2><table id="estIn"></table></div>
+    <div class="card"><h2>FUSES</h2><div class="scroll"><table id="fuseIn"></table></div>
+      <p class="note">Copper thickness 0.8 to 5.0 mm. Output side copper is 0 because the cable lug sits on the fuse terminal.</p></div>
+  </div>
+  <div class="grid"><div class="card" style="grid-column:1/-1"><h2>TOP VIEW (TO SCALE)</h2><div id="draw"></div>
+    <div class="legend"><span><span class="sw" style="background:var(--fuseFill)"></span>Fuse slot</span><span><span class="sw" style="background:var(--cuFill)"></span>Input busbar and branch</span><span><span class="sw" style="background:var(--zoneFill)"></span>Keepout zone</span><span><span class="sw" style="border:1px dashed var(--muted)"></span>Cover outline</span></div></div></div>
+  <div class="grid">
+    <div class="card"><h2>CLEARANCES AND BUS SIZING</h2><table class="res" id="rBus"></table></div>
+    <div class="card"><h2>BLOCK SIZE</h2><table class="res" id="rSize"></table></div>
+    <div class="card"><h2>COPPER</h2><table class="res" id="rCu"></table></div>
+    <div class="card"><h2>PLASTIC BASE AND COVER</h2><table class="res" id="rPl"></table></div>
+    <div class="card"><h2>PART COST</h2><table class="res" id="rCost"></table></div>
+  </div>
+</section>
+
+<section class="tab" id="t-kz">
+  <div class="grid">
+    <div class="card"><h2>ZONE INPUTS</h2><div class="scroll"><table id="kzIn"></table></div>
+      <p class="note">An included zone sits at the far end of the fuse row, opposite the B+ stud, and adds space to the base. Use 0 studs when the zone is laser welded to the bus. Zone current is already part of the B+ load and is not added to it.</p></div>
+    <div class="card"><h2>ZONE CALCULATION</h2><div class="scroll"><table class="res" id="kzOut"></table></div></div>
+  </div>
+</section>
+
+<section class="tab" id="t-bs">
+  <div class="grid">
+    <div class="card"><h2>INPUTS</h2><table id="bsIn"></table></div>
+    <div class="card"><h2>KNOWN BAR</h2><table class="res" id="bsKnown"></table></div>
+  </div>
+  <div class="grid">
+    <div class="card" style="grid-column:1/-1"><h2>RATIO SWEEP AT FIXED CURRENT</h2>
+      <p class="note" style="margin-top:0">Each row is the smallest bar that carries the current at the allowed rise for that width : thickness ratio. Ratios are editable. Cheapest bar that fits is highlighted.</p>
+      <div id="bsChart" style="max-width:760px"></div>
+      <div class="scroll"><table id="bsSweep"></table></div>
+      <p class="note" id="bsBest"></p>
+      <p class="note">Model: I = k x derate x A<sup>0.5</sup> x p<sup>0.39</sup> x (rise / 30)<sup>0.61</sup>, with A the area (mm2) and p the perimeter (mm). k = 5.95 is an approximate fit to DIN 43671 bare copper ratings. Calibrate it on the Assumptions tab.</p>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="t-asm">
+  <div class="grid" id="asmGrid"></div>
+</section>
+</main>
+
+<script id="calc">
+/* Calculation core. Mirrors the workbook cell for cell. Keep in step with bft/tools/build_v1_4.py. */
+var BFT = (function(){
+  function defaults(){
+    return {
+      est:{voltage:12,load:300,cuT:2,plasticPrice:5.5,cuPrice:11,bpStud:"M8",bpCount:1,
+           bpConn:"Eyelet 90 degree",retention:"Over-molded",joining:"Bolted both sides",outCu:0,
+           fuses:[{type:"MEGA (M8)",qty:2},{type:"MIDI (M6)",qty:1},{type:"MIDI (M5)",qty:2}]},
+      zones:[
+        {name:"Bolted relay",include:"Yes",L:60,W:45,H:40,studs:2,size:"M6",current:100,branch:""},
+        {name:"Spare box",include:"No",L:40,W:30,H:25,studs:0,size:"M6",current:0,branch:""}],
+      bs:{current:300,rise:30,length:150,width:40,thick:2,maxWidth:30,
+          ratios:[1,1.5,2,3,4,5,6,8,10,12,15,20]},
+      a:{floor:3,wall:2.5,divider:2,divFrac:0.6,coverT:2,skirt:8,plasticRho:1.36,rib:0.1,scrap:0.05,
+         cuRho:8.96,curDensity:4,plating:0.05,minWMult:2.5,socketExtra:1,hood90:7000,hoodFlat:2500,lug:2,
+         clearance:[{v:0,clr:1.5,crp:2},{v:16.01,clr:2.5,crp:3.5},{v:32.01,clr:3,crp:4},{v:60.01,clr:4,crp:6}],
+         bolts:{M8:{dia:8,hole:8.5,af:13,od:21,nut:6.8,washer:1.6,cost:0.3,boss:1},
+                M6:{dia:6,hole:6.5,af:10,od:17,nut:5.2,washer:1.6,cost:0.18,boss:0.75},
+                M5:{dia:5,hole:5.5,af:8,od:15,nut:4.7,washer:1,cost:0.14,boss:0.6}},
+         retention:{"Over-molded":{boss:2000,cost:0.08},"Snap-in from bottom":{boss:3200,cost:0.04},"Slide-in":{boss:2600,cost:0.03}},
+         joining:{"Bolted both sides":0.1,"Clinch":0.05,"Laser weld":0.14},
+         fitGap:0.5,ext90:20,extFlat:35,extOut:25,bpTerminal:2.5,bpStudPart:0.45,
+         k:5.95,expA:0.5,expP:0.39,expT:0.61,refRise:30,derate:1},
+      lib:{"MEGA (M8)":{bolt:"M8",pitch:32,body:27,tab:3,height:11},
+           "MIDI (M6)":{bolt:"M6",pitch:28.5,body:20,tab:2,height:9},
+           "MIDI (M5)":{bolt:"M5",pitch:28.5,body:17.5,tab:2,height:9}}
+    };
+  }
+  function num(x){ return (x===""||x==null||isNaN(+x)) ? 0 : +x; }
+  function sockClr(a,b){ return a.bolts[b].od + 2*a.socketExtra; }
+
+  function estimate(m){
+    var a=m.a, e=m.est, t=num(e.cuT), r={};
+    var vol=num(e.voltage), cl=a.clearance[0];
+    a.clearance.forEach(function(c){ if(c.v<=vol) cl=c; });          // MATCH type 1
+    r.clr=cl.clr; r.creep=cl.crp;
+    r.fuses=e.fuses.map(function(fz){
+      var L=m.lib[fz.type], bo=a.bolts[L.bolt], q=num(fz.qty), o={type:fz.type,qty:q,bolt:L.bolt,pitch:L.pitch,body:L.body,tab:L.tab,height:L.height};
+      o.minW=a.minWMult*bo.dia;
+      o.slot=Math.max(L.body,sockClr(a,L.bolt),o.minW+r.clr)+a.divider;
+      o.stack=t+L.tab+a.lug+bo.washer+bo.nut;
+      o.used=q>0?1:0;
+      o.wallNeed=Math.max(L.height,o.stack);
+      o.pastStud=L.pitch+sockClr(a,L.bolt)/2+a.wall;
+      o.boss=bo.boss; o.hw=bo.cost;
+      o.rear=sockClr(a,L.bolt)/2+a.wall;
+      return o;
+    });
+    var F=r.fuses, mx=function(key){ return Math.max.apply(null,F.map(function(o){return o.used*o[key];})); };
+    var sum=function(fn){ return F.reduce(function(s,o){return s+fn(o);},0); };
+    r.nPos=sum(function(o){return o.qty;});
+    r.busCur=num(e.load)/(a.curDensity*t);
+    r.busBolt=Math.max(mx("minW"),a.minWMult*a.bolts[e.bpStud].dia);
+    r.busW=Math.max(r.busCur,r.busBolt);
+    r.busSetBy=r.busCur>=r.busBolt?"Current load":"Bolt size";
+    r.density=num(e.load)/(r.busW*t);
+    r.last=F[2].qty>0?F[2]:(F[1].qty>0?F[1]:F[0]);
+
+    // keepout zones
+    var nb=num(e.bpCount);
+    r.zones=m.zones.map(function(z,i){
+      var o={}, bo=a.bolts[z.size];
+      o.incl=z.include==="Yes"?1:0;
+      o.wAdd=o.incl*(num(z.W)+a.divider);
+      o.lNeed=o.incl*(num(z.L)+2*a.wall);
+      o.hNeed=o.incl*num(z.H);
+      o.studs=o.incl*num(z.studs);
+      o.conn=(o.incl===1&&num(z.current)>0)?1:0;
+      o.branchW=o.conn*Math.max(num(z.current)/(a.curDensity*t), o.studs>0?a.minWMult*bo.dia:0);
+      return o;
+    });
+    r.zones.forEach(function(o,i){
+      var z=m.zones[i], bo=a.bolts[z.size];
+      o.autoLen=o.conn*(r.last.slot/2-r.last.minW/2+(i===0?0:r.zones[0].wAdd)+o.wAdd/2);
+      o.lenUsed=o.conn*((z.branch===""||z.branch==null)?o.autoLen:num(z.branch));
+      o.cuMass=o.lenUsed*o.branchW*t*a.cuRho/1000;
+      o.hw=o.studs*bo.cost;
+      o.bossU=o.studs*bo.boss;
+      o.laser=(o.conn===1&&num(z.studs)===0)?1:0;
+    });
+    var Z=r.zones, zs=function(k){return Z[0][k]+Z[1][k];};
+    r.zIncl=zs("incl"); r.zW=zs("wAdd"); r.zL=Math.max(Z[0].lNeed,Z[1].lNeed); r.zH=Math.max(Z[0].hNeed,Z[1].hNeed);
+    r.zStuds=zs("studs"); r.zCu=zs("cuMass"); r.zHw=zs("hw"); r.zBoss=zs("bossU");
+    r.zLaser=(Z[0].laser+Z[1].laser)*a.joining["Laser weld"];
+
+    // block size
+    r.slots=sum(function(o){return o.qty*o.slot;});
+    r.bpSec=nb*(sockClr(a,e.bpStud)+a.divider);
+    r.baseW=r.slots+r.bpSec+r.zW+2*a.wall;
+    r.fuseWall=mx("wallNeed");
+    r.wallH=Math.max(r.fuseWall,r.zH);
+    r.inRow=Math.max(mx("rear"),(r.busW-r.busBolt/2)+r.clr+a.wall);   // input stud row from the back edge
+    r.baseL=Math.max(r.inRow+mx("pastStud"),sockClr(a,e.bpStud)+2*a.wall,r.zL);
+    r.divH=Math.min(r.fuseWall,Math.max(a.divFrac*r.fuseWall,r.creep));
+    r.height=a.floor+r.wallH+a.coverT;
+    r.divN=r.nPos+nb-1+r.zIncl;
+
+    // copper
+    r.busLen=r.baseW-r.zW-2*a.wall-r.last.slot/2+r.last.minW/2;
+    r.busMass=r.busLen*r.busW*t*a.cuRho/1000;
+    r.outCu=num(e.outCu);
+    r.cuTotal=r.busMass+r.outCu+r.zCu;
+    r.cuCost=r.cuTotal/1000*num(e.cuPrice)*(1+a.plating);
+
+    // plastic base
+    var ret=a.retention[e.retention];
+    r.bolts=2*r.nPos+nb+r.zStuds;
+    r.bossVol=ret.boss*(2*sum(function(o){return o.qty*o.boss;})+nb*a.bolts[e.bpStud].boss+r.zBoss);
+    r.floorVol=r.baseL*r.baseW*a.floor;
+    r.wallVol=2*(r.baseL+r.baseW-2*a.wall)*a.wall*r.wallH;
+    r.divVol=r.divN*(r.baseL-2*a.wall)*a.divider*r.divH;
+    r.rawVol=r.bossVol+r.floorVol+r.wallVol+r.divVol;
+    r.moldVol=r.rawVol*(1+a.rib)*(1+a.scrap);
+    r.baseMass=r.moldVol/1000*a.plasticRho;
+    r.baseCost=r.baseMass/1000*num(e.plasticPrice);
+
+    // cover
+    r.overhang=a.coverT+a.fitGap;
+    r.bpExt=(nb>0&&e.bpConn!=="Battery terminal")?(e.bpConn==="Eyelet 90 degree"?a.ext90:a.extFlat):0;
+    r.outExt=a.extOut;
+    r.coverL=r.baseL+2*r.overhang+r.outExt;
+    r.coverW=r.baseW+2*r.overhang+r.bpExt;
+    r.topVol=r.coverL*r.coverW*a.coverT;
+    r.skirtVol=2*(r.coverL+r.coverW-2*a.coverT)*a.coverT*a.skirt;
+    r.hoodVol=e.bpConn==="Battery terminal"?0:nb*(e.bpConn==="Eyelet 90 degree"?a.hood90:a.hoodFlat);
+    r.coverVol=(r.topVol+r.skirtVol+r.hoodVol)*(1+a.scrap);
+    r.coverMass=r.coverVol/1000*a.plasticRho;
+    r.coverCost=r.coverMass/1000*num(e.plasticPrice);
+
+    // hardware and cost
+    r.fuseHw=2*sum(function(o){return o.qty*o.hw;});
+    r.retAdd=r.bolts*ret.cost;
+    r.joinAdd=r.bolts*a.joining[e.joining];
+    r.bpPart=e.bpConn==="Battery terminal"?nb*a.bpTerminal:nb*a.bpStudPart;
+    r.zoneCost=r.zHw+r.zLaser;
+    r.total=r.baseCost+r.coverCost+r.cuCost+r.fuseHw+r.bpPart+r.retAdd+r.joinAdd+r.zoneCost;
+    r.perPos=r.total/r.nPos;
+    r.plasticMass=r.baseMass+r.coverMass;
+    return r;
+  }
+
+  function busbar(m){
+    var a=m.a, b=m.bs, I=num(b.current), rise=num(b.rise), k=a.k*a.derate, o={};
+    var W=num(b.width), T=num(b.thick), price=num(m.est.cuPrice);
+    o.ratio=W/T; o.area=W*T; o.perim=2*(W+T); o.density=I/o.area;
+    o.rated=k*Math.pow(o.area,a.expA)*Math.pow(o.perim,a.expP)*Math.pow(rise/a.refRise,a.expT);
+    o.riseAt=a.refRise*Math.pow(I/(k*Math.pow(o.area,a.expA)*Math.pow(o.perim,a.expP)),1/a.expT);
+    o.ok=o.rated>=I?"Yes":"No";
+    o.mass=num(b.length)*o.area*a.cuRho/1000;
+    o.cost=o.mass/1000*price*(1+a.plating);
+    var ieff=I/(k*Math.pow(rise/a.refRise,a.expT)), best=null;
+    o.sweep=b.ratios.map(function(rr){
+      rr=num(rr);
+      var s={ratio:rr};
+      s.t=Math.pow(ieff/(Math.pow(rr,a.expA)*Math.pow(2*(rr+1),a.expP)),1/(2*a.expA+a.expP));
+      s.w=rr*s.t; s.area=s.t*s.w; s.density=I/s.area;
+      s.mass=num(b.length)*s.area*a.cuRho/1000;
+      s.cost=s.mass/1000*price*(1+a.plating);
+      s.fits=(s.t>=0.8&&s.t<=5&&s.w<=num(b.maxWidth))?"Yes":"No";
+      if(s.fits==="Yes"&&(best===null||s.cost<best.cost)) best=s;
+      return s;
+    });
+    o.best=best;
+    return o;
+  }
+  return {defaults:defaults,estimate:estimate,busbar:busbar};
+})();
+if(typeof module!=="undefined") module.exports=BFT;
+</script>
+
+<script>
+(function(){
+var M=BFT.defaults();
+var $=function(id){return document.getElementById(id);};
+var fmt=function(v,d){ if(typeof v!=="number"||!isFinite(v)) return String(v); return v.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); };
+var money=function(v){ return "$"+fmt(v,2); };
+var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); };
+
+// generic bound field: obj[key]; opts = list for select
+function field(obj,key,opts,step){
+  if(opts) return '<select data-k="'+key+'">'+opts.map(function(o){return '<option'+(o==obj[key]?' selected':'')+'>'+esc(o)+'</option>';}).join("")+'</select>';
+  var isNum=typeof obj[key]==="number"||obj[key]==="";
+  return '<input '+(isNum?'type="number" step="'+(step||"any")+'"':'type="text"')+' data-k="'+key+'" value="'+esc(obj[key])+'">';
+}
+function bind(root,obj,cb){
+  root.querySelectorAll("[data-k]").forEach(function(el){
+    el.addEventListener("input",function(){
+      var k=el.dataset.k, v=el.value;
+      if(el.tagName==="INPUT"&&el.type==="number"){ v=v===""?(k==="branch"?"":0):+v; }
+      else if(typeof obj[k]==="number"&&el.tagName==="SELECT"&&!isNaN(+v)) v=+v;
+      obj[k]=v; (cb||update)();
+    });
+  });
+}
+function rows(list){ return list.map(function(x){ return '<tr><td>'+x[0]+'</td><td class="n">'+x[1]+'</td><td class="u">'+(x[2]||"")+'</td></tr>'; }).join(""); }
+
+var BOLTS=["M8","M6","M5"];
+function buildInputs(){
+  var e=M.est;
+  var list=[["System voltage","voltage","V"],["Expected load on B+ input","load","A"],["Copper thickness","cuT","mm (0.8 to 5.0)"],
+    ["Plastic price (PA66-GF30)","plasticPrice","$/kg"],["Copper price","cuPrice","$/kg"],["B+ stud size","bpStud","",BOLTS],
+    ["B+ studs under the cover","bpCount","count"],["B+ connection and cover exit","bpConn","",["Eyelet 90 degree","Eyelet flat","Battery terminal"]],
+    ["Bolt retention method","retention","",Object.keys(M.a.retention)],["Busbar to bolt joining method","joining","",Object.keys(M.a.joining)],
+    ["Output side copper","outCu","g"]];
+  $("estIn").innerHTML=list.map(function(x){return '<tr><td>'+x[0]+'</td><td style="width:150px">'+field(e,x[1],x[3])+'</td><td class="u">'+x[2]+'</td></tr>';}).join("");
+  bind($("estIn"),e);
+  $("fuseIn").innerHTML='<tr><th>Fuse type</th><th class="n">Qty</th><th class="n">Bolt</th><th class="n">Slot width</th><th class="n">Stack height</th></tr>'+
+    e.fuses.map(function(fz,i){return '<tr><td>'+esc(fz.type)+'</td><td style="width:80px" data-f="'+i+'">'+field(fz,"qty",null,1)+'</td><td class="n" id="fb'+i+'"></td><td class="n" id="fs'+i+'"></td><td class="n" id="fh'+i+'"></td></tr>';}).join("");
+  e.fuses.forEach(function(fz,i){ bind($("fuseIn").querySelector('[data-f="'+i+'"]'),fz); });
+
+  var zl=[["Name","name"],["Include in block","include","",["Yes","No"]],["Length, front to back","L","mm"],["Width, along the fuse row","W","mm"],
+    ["Height above the floor","H","mm"],["Studs","studs","",[0,1,2]],["Stud size","size","",BOLTS],["Current from the input bus","current","A"],
+    ["Branch length override","branch","mm, blank = auto"]];
+  $("kzIn").innerHTML='<tr><th></th><th>Zone 1</th><th>Zone 2</th><th></th></tr>'+zl.map(function(x){
+    return '<tr><td>'+x[0]+'</td><td data-z="0">'+field(M.zones[0],x[1],x[3])+'</td><td data-z="1">'+field(M.zones[1],x[1],x[3])+'</td><td class="u">'+(x[2]||"")+'</td></tr>';}).join("");
+  [0,1].forEach(function(i){ $("kzIn").querySelectorAll('[data-z="'+i+'"]').forEach(function(td){ bind(td,M.zones[i]); }); });
+
+  var bl=[["Current","current","A"],["Allowed temperature rise","rise","C above ambient"],["Bar length","length","mm"],["Known bar width","width","mm"],
+    ["Known bar thickness","thick","mm"],["Max width that fits the package","maxWidth","mm"]];
+  $("bsIn").innerHTML=rows([]) + bl.map(function(x){return '<tr><td>'+x[0]+'</td><td style="width:120px">'+field(M.bs,x[1])+'</td><td class="u">'+x[2]+'</td></tr>';}).join("")+
+    '<tr><td>Copper price</td><td class="n" id="bsPrice"></td><td class="u">$/kg, from the Estimator tab</td></tr>';
+  bind($("bsIn"),M.bs);
+  buildAssumptions();
+}
+
+function buildAssumptions(){
+  var a=M.a, g=$("asmGrid");
+  var sc=[["General geometry, material and process",[["Base floor thickness","floor","mm"],["Outer wall thickness","wall","mm"],["Divider thickness between fuse slots","divider","mm"],
+      ["Divider height as fraction of wall height","divFrac","ratio"],["Cover thickness","coverT","mm"],["Cover skirt height","skirt","mm"],["PA66-GF30 density","plasticRho","g/cm3"],
+      ["Rib, boss and detail allowance on base","rib","fraction"],["Scrap and runner allowance","scrap","fraction"],["Copper density","cuRho","g/cm3"],
+      ["Copper design current density","curDensity","A/mm2"],["Plating cost uplift on copper","plating","fraction"],["Minimum bus width as multiple of bolt diameter","minWMult","x d"],
+      ["OEM socket extra radial clearance","socketExtra","mm"],["Cover hood volume per B+ eyelet, 90 degree","hood90","mm3"],["Cover extension volume per B+ eyelet, flat","hoodFlat","mm3"],
+      ["Cable lug thickness on the fuse terminal","lug","mm"]]],
+    ["Cover footprint and B+ parts",[["Fit gap between cover and base","fitGap","mm"],["Cover extension at B+ end, 90 degree eyelet","ext90","mm"],
+      ["Cover extension at B+ end, flat eyelet","extFlat","mm"],["Cover extension at fuse output side","extOut","mm"],["Battery terminal, purchased","bpTerminal","$ each"],["B+ stud, M8, purchased","bpStudPart","$ each"]]],
+    ["Busbar ampacity model (Busbar sizer)",[["Ampacity coefficient k","k","A"],["Area exponent","expA",""],["Perimeter exponent","expP",""],["Temperature rise exponent","expT",""],
+      ["Reference temperature rise for k","refRise","C"],["Enclosure derating factor","derate","ratio"]]]];
+  var html=sc.map(function(s,i){return '<div class="card"><h2>'+s[0].toUpperCase()+'</h2><table data-s="'+i+'">'+s[1].map(function(x){
+    return '<tr><td>'+x[0]+'</td><td style="width:110px">'+field(a,x[1])+'</td><td class="u">'+x[2]+'</td></tr>';}).join("")+'</table></div>';}).join("");
+  html+='<div class="card"><h2>CLEARANCE AND CREEPAGE BY VOLTAGE</h2><table id="aClr"><tr><th>Lower bound (V)</th><th>Clearance (mm)</th><th>Creepage (mm)</th></tr>'+
+    a.clearance.map(function(c,i){return '<tr data-i="'+i+'"><td>'+field(c,"v")+'</td><td>'+field(c,"clr")+'</td><td>'+field(c,"crp")+'</td></tr>';}).join("")+'</table></div>';
+  html+='<div class="card"><h2>BOLT SIZES</h2><div class="scroll"><table id="aBolt"><tr><th>Bolt</th><th>Dia</th><th>Socket OD</th><th>Nut ht</th><th>Washer</th><th>$/bolt</th><th>Boss factor</th></tr>'+
+    BOLTS.map(function(b){var o=a.bolts[b];return '<tr data-b="'+b+'"><td>'+b+'</td><td>'+field(o,"dia")+'</td><td>'+field(o,"od")+'</td><td>'+field(o,"nut")+'</td><td>'+field(o,"washer")+'</td><td>'+field(o,"cost")+'</td><td>'+field(o,"boss")+'</td></tr>';}).join("")+'</table></div></div>';
+  html+='<div class="card"><h2>RETENTION AND JOINING</h2><table id="aRet"><tr><th>Retention method</th><th>Boss at M8 (mm3)</th><th>$/bolt</th></tr>'+
+    Object.keys(a.retention).map(function(k){var o=a.retention[k];return '<tr data-r="'+esc(k)+'"><td>'+esc(k)+'</td><td>'+field(o,"boss")+'</td><td>'+field(o,"cost")+'</td></tr>';}).join("")+
+    '<tr><th>Joining method</th><th>$/joint</th><th></th></tr>'+Object.keys(a.joining).map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+field(a.joining,k)+'</td><td></td></tr>';}).join("")+'</table></div>';
+  html+='<div class="card"><h2>FUSE LIBRARY</h2><div class="scroll"><table id="aLib"><tr><th>Type</th><th>Pitch</th><th>Body W</th><th>Tab thk</th><th>Height</th></tr>'+
+    Object.keys(M.lib).map(function(k){var o=M.lib[k];return '<tr data-l="'+esc(k)+'"><td>'+esc(k)+'</td><td>'+field(o,"pitch")+'</td><td>'+field(o,"body")+'</td><td>'+field(o,"tab")+'</td><td>'+field(o,"height")+'</td></tr>';}).join("")+'</table></div></div>';
+  g.innerHTML=html;
+  g.querySelectorAll("table[data-s]").forEach(function(t){bind(t,a);});
+  g.querySelectorAll("#aClr tr[data-i]").forEach(function(tr){bind(tr,a.clearance[+tr.dataset.i]);});
+  g.querySelectorAll("#aBolt tr[data-b]").forEach(function(tr){bind(tr,a.bolts[tr.dataset.b]);});
+  g.querySelectorAll("#aRet tr[data-r]").forEach(function(tr){bind(tr,a.retention[tr.dataset.r]);});
+  bind(g.querySelector("#aRet"),a.joining);
+  g.querySelectorAll("#aLib tr[data-l]").forEach(function(tr){bind(tr,M.lib[tr.dataset.l]);});
+}
+
+function draw(r){
+  var a=M.a, e=M.est, pad=8, s=1, W=r.baseW, L=r.baseL, ov=r.overhang;
+  var cx0=-ov-r.bpExt, cy0=-ov, cW=r.coverW, cL=r.coverL;
+  var vb=[cx0-pad,cy0-pad,cW+2*pad,cL+2*pad].map(function(v){return v.toFixed(1);}).join(" ");
+  var o=[];
+  o.push('<svg viewBox="'+vb+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top view of the base">');
+  o.push('<rect x="'+cx0+'" y="'+cy0+'" width="'+cW+'" height="'+cL+'" fill="none" stroke="var(--muted)" stroke-width="0.6" stroke-dasharray="3 2"/>');
+  o.push('<rect x="0" y="0" width="'+W+'" height="'+L+'" fill="var(--panel)" stroke="var(--ink)" stroke-width="'+a.wall+'" />');
+  var yIn=r.inRow, x=a.wall, nb=num(e.bpCount);
+  // B+ studs
+  for(var i=0;i<nb;i++){ var w=r.bpSec/nb, sx=x+w/2;
+    o.push('<circle cx="'+sx+'" cy="'+yIn+'" r="'+(M.a.bolts[e.bpStud].dia/2)+'" fill="var(--stud)"/>');
+    o.push('<text x="'+sx+'" y="'+(yIn+M.a.bolts[e.bpStud].dia+7)+'" font-size="6" text-anchor="middle" fill="var(--ink)">B+</text>');
+    x+=w; }
+  // bus (behind input studs, front lip = half the min bus width)
+  var busFront=yIn+r.busBolt/2, busY=busFront-r.busW;
+  o.push('<rect x="'+a.wall+'" y="'+busY+'" width="'+r.busLen+'" height="'+r.busW+'" fill="var(--cuFill)" stroke="var(--cu)" stroke-width="0.5" opacity="0.9"/>');
+  // fuse slots
+  r.fuses.forEach(function(fz){ for(var k=0;k<fz.qty;k++){
+    var sx=x+fz.slot/2, d=M.a.bolts[fz.bolt].dia;
+    o.push('<rect x="'+(sx-fz.body/2)+'" y="'+busFront+'" width="'+fz.body+'" height="'+(yIn+fz.pitch+d-busFront)+'" rx="2" fill="var(--fuseFill)" stroke="var(--fuse)" stroke-width="0.6"/>');
+    o.push('<rect x="'+(sx-d)+'" y="'+(yIn-d)+'" width="'+(2*d)+'" height="'+(busFront-yIn+d)+'" fill="none" stroke="var(--fuse)" stroke-width="0.6"/>');
+    o.push('<circle cx="'+sx+'" cy="'+yIn+'" r="'+d/2+'" fill="var(--stud)"/><circle cx="'+sx+'" cy="'+(yIn+fz.pitch)+'" r="'+d/2+'" fill="var(--stud)"/>');
+    o.push('<text x="'+sx+'" y="'+(yIn+fz.pitch/2+2)+'" font-size="5" text-anchor="middle" fill="var(--ink)">'+fz.type.split(" ")[0]+'</text>');
+    x+=fz.slot;
+    if(x<W-a.wall-r.zW-0.01) o.push('<line x1="'+(x-a.divider/2)+'" y1="'+a.wall+'" x2="'+(x-a.divider/2)+'" y2="'+(L-a.wall)+'" stroke="var(--fuse)" stroke-width="'+a.divider+'" opacity="0.35"/>');
+  }});
+  // zones and branches
+  var busEnd=a.wall+r.busLen;
+  r.zones.forEach(function(z,i){ if(!z.incl) return; var zi=M.zones[i];
+    o.push('<line x1="'+(x+a.divider/2)+'" y1="'+a.wall+'" x2="'+(x+a.divider/2)+'" y2="'+(L-a.wall)+'" stroke="var(--fuse)" stroke-width="'+a.divider+'" opacity="0.35"/>');
+    var zx=x+a.divider, zw=num(zi.W), zl=num(zi.L), zc=zx+zw/2;
+    o.push('<rect x="'+zx+'" y="'+a.wall+'" width="'+zw+'" height="'+zl+'" fill="var(--zoneFill)" stroke="var(--zone)" stroke-width="0.8" stroke-dasharray="4 2"/>');
+    o.push('<text x="'+zc+'" y="'+(a.wall+zl-3)+'" font-size="5" text-anchor="middle" fill="var(--ink)">'+esc(zi.name)+'</text>');
+    if(z.conn){ var by=busY+r.busW/2-z.branchW/2;
+      o.push('<rect x="'+busEnd+'" y="'+by+'" width="'+Math.max(0,z.lenUsed)+'" height="'+z.branchW+'" fill="var(--cuFill)" stroke="var(--cu)" stroke-width="0.5" opacity="0.9"/>'); }
+    var d=M.a.bolts[zi.size].dia;
+    for(var k=0;k<z.studs;k++){ var sy=(z.conn?busY+r.busW/2:a.wall+zl/3)+k*Math.min(zl/2,25);
+      o.push('<circle cx="'+zc+'" cy="'+sy+'" r="'+d/2+'" fill="var(--stud)"/>'); }
+    if(z.laser) o.push('<text x="'+zc+'" y="'+(busY+r.busW/2+2)+'" font-size="4.5" text-anchor="middle" fill="var(--warn)">weld</text>');
+    x=zx+zw;
+  });
+  o.push('</svg>');
+  $("draw").innerHTML=o.join("")+'<p class="note">Base '+fmt(W,1)+' wide x '+fmt(L,1)+' deep, cover '+fmt(cW,1)+' x '+fmt(cL,1)+'. B+ on the left, fuse outputs face the front (bottom), keepout zones at the far end of the row. Fuse input tabs sit on the bus lip.</p>';
+}
+
+function chart(b){
+  var S=b.sweep, w=640, h=220, l=56, rt=12, t=12, bt=36;
+  var xs=S.map(function(s){return s.ratio;}), ys=S.map(function(s){return s.cost;});
+  var x0=0, x1=Math.max.apply(null,xs)*1.05||1, y1=Math.max.apply(null,ys)*1.1||1, y0=0;
+  var X=function(v){return l+(v-x0)/(x1-x0)*(w-l-rt);}, Y=function(v){return t+(1-(v-y0)/(y1-y0))*(h-t-bt);};
+  var o=['<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Copper cost versus width to thickness ratio">'];
+  for(var i=0;i<=4;i++){ var v=y0+(y1-y0)*i/4; o.push('<line x1="'+l+'" x2="'+(w-rt)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)"/><text x="'+(l-6)+'" y="'+(Y(v)+4)+'" font-size="11" text-anchor="end" fill="var(--muted)">$'+v.toFixed(2)+'</text>'); }
+  xs.forEach(function(v){ o.push('<text x="'+X(v)+'" y="'+(h-bt+16)+'" font-size="11" text-anchor="middle" fill="var(--muted)">'+v+'</text>'); });
+  o.push('<text x="'+((l+w-rt)/2)+'" y="'+(h-4)+'" font-size="11" text-anchor="middle" fill="var(--muted)">Width : thickness</text>');
+  o.push('<polyline fill="none" stroke="var(--accent)" stroke-width="2" points="'+S.map(function(s){return X(s.ratio)+","+Y(s.cost);}).join(" ")+'"/>');
+  S.forEach(function(s){ var best=b.best&&s===b.best;
+    o.push('<circle cx="'+X(s.ratio)+'" cy="'+Y(s.cost)+'" r="'+(best?6:4)+'" fill="'+(s.fits==="Yes"?"var(--good)":"var(--panel)")+'" stroke="'+(s.fits==="Yes"?"var(--good)":"var(--warn)")+'" stroke-width="2"><title>'+s.ratio+':1  '+s.w.toFixed(1)+' x '+s.t.toFixed(2)+' mm  $'+s.cost.toFixed(2)+'</title></circle>'); });
+  o.push('</svg>');
+  $("bsChart").innerHTML=o.join("")+'<div class="legend"><span><span class="sw" style="background:var(--good)"></span>Fits</span><span><span class="sw" style="border:2px solid var(--warn)"></span>Does not fit (too thick, too thin or too wide)</span></div>';
+}
+
+function num(x){ return (x===""||x==null||isNaN(+x)) ? 0 : +x; }
+
+function update(){
+  var r=BFT.estimate(M), b=BFT.busbar(M);
+  $("kpis").innerHTML=[["Part cost",money(r.total)],["Base L x W x H",fmt(r.baseL,1)+" x "+fmt(r.baseW,1)+" x "+fmt(r.height,1)],["Plastic mass",fmt(r.plasticMass,1)+" g"],
+    ["Copper mass",fmt(r.cuTotal,1)+" g"],["Bus width",fmt(r.busW,1)+" mm"],["Bus width set by",r.busSetBy],["Cover L x W",fmt(r.coverL,1)+" x "+fmt(r.coverW,1)],["Keepout zones included",r.zIncl]]
+    .map(function(k){return '<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>';}).join("");
+  r.fuses.forEach(function(fz,i){ $("fb"+i).textContent=fz.bolt; $("fs"+i).textContent=fmt(fz.slot,1); $("fh"+i).textContent=fmt(fz.stack,1); });
+  $("rBus").innerHTML=rows([["Required clearance",fmt(r.clr,1),"mm"],["Required creepage",fmt(r.creep,1),"mm"],["Bus width needed for the current",fmt(r.busCur,1),"mm"],
+    ["Bus width needed for the bolts",fmt(r.busBolt,1),"mm"],["Bus width used",fmt(r.busW,1),"mm"],["Bus width is set by",r.busSetBy],["Resulting current density",fmt(r.density,2),"A/mm2"]]);
+  $("rSize").innerHTML=rows([["Fuse positions",r.nPos],["Fuse slots width",fmt(r.slots,1),"mm"],["B+ stud section width",fmt(r.bpSec,1),"mm"],["Keepout zone width added",fmt(r.zW,1),"mm"],
+    ["Base width",fmt(r.baseW,1),"mm"],["Wall height",fmt(r.wallH,1),"mm"],["Base length",fmt(r.baseL,1),"mm"],["Divider height",fmt(r.divH,2),"mm"],
+    ["Overall height with cover",fmt(r.height,1),"mm"],["Divider count",r.divN]]);
+  $("rCu").innerHTML=rows([["Bus length",fmt(r.busLen,1),"mm"],["Bus mass",fmt(r.busMass,1),"g"],["Output side copper",fmt(r.outCu,1),"g"],
+    ["Keepout zone branch copper",fmt(r.zCu,1),"g"],["Copper total",fmt(r.cuTotal,1),"g"],["Copper cost",money(r.cuCost)]]);
+  $("rPl").innerHTML=rows([["Bolts retained in the base",r.bolts],["Boss volume",fmt(r.bossVol,0),"mm3"],["Floor volume",fmt(r.floorVol,0),"mm3"],["Wall volume",fmt(r.wallVol,0),"mm3"],
+    ["Divider volume",fmt(r.divVol,0),"mm3"],["Base mass",fmt(r.baseMass,1),"g"],["Cover length",fmt(r.coverL,1),"mm"],["Cover width",fmt(r.coverW,1),"mm"],["Cover mass",fmt(r.coverMass,1),"g"]]);
+  $("rCost").innerHTML=rows([["Plastic base",money(r.baseCost)],["Cover",money(r.coverCost)],["Copper",money(r.cuCost)],["Fuse bolt and nut hardware",money(r.fuseHw)],
+    ["B+ connection part",money(r.bpPart)],["Retention adder",money(r.retAdd)],["Joining adder",money(r.joinAdd)],["Keepout zone hardware and welds",money(r.zoneCost)],
+    ["<b>Total part cost</b>","<b>"+money(r.total)+"</b>"],["Cost per fuse position",money(r.perPos)],["Total plastic mass",fmt(r.plasticMass,1),"g"]]);
+  var Z=r.zones, zr=function(label,k,d,u){return '<tr><td>'+label+'</td><td class="n">'+(d==="$"?money(Z[0][k]):fmt(Z[0][k],d))+'</td><td class="n">'+(d==="$"?money(Z[1][k]):fmt(Z[1][k],d))+'</td><td class="u">'+(u||"")+'</td></tr>';};
+  $("kzOut").innerHTML='<tr><th></th><th class="n">Zone 1</th><th class="n">Zone 2</th><th></th></tr>'+
+    zr("Included (1 = yes)","incl",0)+zr("Width added to the base","wAdd",1,"mm")+zr("Base length needed","lNeed",1,"mm")+zr("Wall height needed","hNeed",1,"mm")+
+    zr("Studs counted","studs",0)+zr("Connected to the bus (1 = yes)","conn",0)+zr("Branch width","branchW",1,"mm")+zr("Auto branch length","autoLen",1,"mm")+
+    zr("Branch length used","lenUsed",1,"mm")+zr("Branch copper mass","cuMass",1,"g")+zr("Stud bolt and nut hardware","hw","$")+zr("Stud boss size units","bossU",2)+
+    zr("Laser weld joints","laser",0);
+  draw(r);
+  $("bsPrice").textContent=money(num(M.est.cuPrice));
+  $("bsKnown").innerHTML=rows([["Width to thickness ratio",fmt(b.ratio,1)+" : 1"],["Cross-section area",fmt(b.area,1),"mm2"],["Perimeter",fmt(b.perim,1),"mm"],
+    ["Current density",fmt(b.density,2),"A/mm2"],["Rated current at the allowed rise",fmt(b.rated,1),"A"],["Estimated temperature rise at the current",fmt(b.riseAt,1),"C"],
+    ["Carries the current?",'<span class="'+(b.ok==="Yes"?"yes":"no")+'">'+b.ok+'</span>'],["Mass",fmt(b.mass,1),"g"],["<b>Copper cost</b>","<b>"+money(b.cost)+"</b>"]]);
+  var tb=$("bsSweep"), active=document.activeElement, ai=active&&active.dataset&&active.dataset.ri;
+  tb.innerHTML='<tr><th>Width : thickness</th><th class="n">Thickness (mm)</th><th class="n">Width (mm)</th><th class="n">Area (mm2)</th><th class="n">A/mm2</th><th class="n">Mass (g)</th><th class="n">Cost</th><th>Fits?</th></tr>'+
+    b.sweep.map(function(s,i){return '<tr'+(s===b.best?' class="best"':'')+'><td style="width:90px"><input type="number" step="any" data-ri="'+i+'" value="'+M.bs.ratios[i]+'"></td><td class="n">'+fmt(s.t,2)+'</td><td class="n">'+fmt(s.w,1)+'</td><td class="n">'+fmt(s.area,1)+'</td><td class="n">'+fmt(s.density,2)+'</td><td class="n">'+fmt(s.mass,1)+'</td><td class="n">'+money(s.cost)+'</td><td class="'+(s.fits==="Yes"?"yes":"no")+'">'+s.fits+'</td></tr>';}).join("");
+  tb.querySelectorAll("[data-ri]").forEach(function(el){ el.addEventListener("change",function(){ M.bs.ratios[+el.dataset.ri]=num(el.value); update(); }); });
+  if(ai!=null){ var re=tb.querySelector('[data-ri="'+ai+'"]'); if(re) re.focus(); }
+  $("bsBest").textContent=b.best?("Cheapest bar that fits: "+b.best.ratio+" : 1, "+fmt(b.best.w,1)+" x "+fmt(b.best.t,2)+" mm, "+money(b.best.cost)+". Cost keeps falling as the bar gets thinner and wider, so the cheapest bar is the widest one that fits."):"No ratio in the sweep fits. Raise the max width or change the ratios.";
+  chart(b);
+}
+
+document.querySelectorAll("#nav button").forEach(function(bt){ bt.addEventListener("click",function(){
+  document.querySelectorAll("#nav button").forEach(function(x){x.classList.toggle("on",x===bt);});
+  document.querySelectorAll("section.tab").forEach(function(s){s.classList.toggle("on",s.id==="t-"+bt.dataset.t);});
+});});
+buildInputs(); update();
+})();
+</script>
+</body>
+</html>

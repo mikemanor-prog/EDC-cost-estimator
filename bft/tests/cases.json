@@ -1,0 +1,10 @@
+[
+ {},
+ {"Keepout Zones!B7":"No"},
+ {"Estimator!B6":600,"Estimator!B7":0.8,"Estimator!B5":48,"Estimator!B12":"Battery terminal","Estimator!B13":"Snap-in from bottom","Estimator!B14":"Laser weld",
+  "Keepout Zones!C7":"Yes","Keepout Zones!C11":0,"Keepout Zones!C13":50,"Keepout Zones!B14":40,"Keepout Zones!B12":"M8","Keepout Zones!C12":"M8",
+  "Busbar Sizer!B5":150,"Busbar Sizer!B6":40,"Busbar Sizer!B8":25,"Busbar Sizer!B9":1.5,"Busbar Sizer!B11":50},
+ {"Estimator!B18":0,"Estimator!B19":4,"Estimator!B20":0,"Estimator!B12":"Eyelet flat","Estimator!B11":2,"Estimator!B10":"M6","Estimator!B13":"Slide-in","Estimator!B14":"Clinch","Estimator!B46":5,
+  "Keepout Zones!B8":120,"Keepout Zones!B9":60,"Keepout Zones!B10":10,"Keepout Zones!B11":1,"Keepout Zones!B12":"M5","Keepout Zones!B13":20,
+  "Assumptions!B63":0.8,"Assumptions!B58":6.5,"Busbar Sizer!B7":300,"Busbar Sizer!A26":2.5}
+]
