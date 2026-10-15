@@ -6,7 +6,9 @@ An Excel workbook and a web page with identical logic.
 |---|---|
 | `Battery_Fuse_Block_Cost_Estimator_v1.3.xlsx` | Baseline workbook (busbar geometry fixes, 2.0 mm cable lug placeholder) |
 | `Battery_Fuse_Block_Cost_Estimator_v1.4.xlsx` | v1.4, built from v1.3 by `tools/build_v1_4.py` |
-| `web/bft_estimator_v1.4.html` | Web tool, single file, open it in a browser |
+| `web/bft_estimator_v1.4.html` | Web tool v1.4, single file, open it in a browser |
+| `Battery_Fuse_Block_Cost_Estimator_v1.5.xlsx` | v1.5, built by `tools/build_v1_5.py` (runs the v1.4 build, then applies v1.5) |
+| `web/bft_estimator_v1.5.html` | Web tool v1.5 |
 | `tests/` | Checks that the web tool and the workbook agree |
 
 ## v1.4 changes
@@ -23,10 +25,21 @@ Each zone has 0, 1 or 2 studs. Use 0 for a laser welded joint, which adds one la
 - It sweeps width : thickness ratios at a fixed current. Each row is the smallest bar for that ratio, and the cheapest bar that fits is flagged.
 - The ampacity model is `I = k x derate x A^0.5 x p^0.39 x (rise/30)^0.61`. Its constants are on Assumptions rows 57 to 63. k = 5.95 is an approximate fit to DIN 43671 bare copper ratings, so calibrate it to test data.
 
+## v1.5 changes
+
+The Keepout Zones sheet is replaced by a **Layout** sheet (web tab "Layout"):
+- **Sealed keepout zones.** Base walls stay at fuse height. A zone taller than the walls gets a cover bump-out, which adds the side walls of the bump to cover volume and raises the overall height. Placement is per zone. *End of row* puts the zone after the long-side fuses. *Back side* puts it behind the bus, which makes the block deeper, not longer. Bus notches are ignored for cost.
+- **Short-side outputs.** On the short side you set how many of each fuse type go there, and which end they exit (opposite B+, or the B+ end). Those fuses turn 90 degrees, the bus becomes an L, and the cover gets an output extension on that end.
+- **Pitch.** Each fuse type has a pitch override (blank = auto). You can also switch the walls between fuses off. Without walls, the auto pitch is body + creepage instead of body + divider, and sockets may overlap. A pitch below auto is flagged.
+- **Battery fit.** Max length and depth (cover outside) are flagged, not enforced.
+
 ## Rebuild and check
 
 ```
 python bft/tools/build_v1_4.py                                              # writes the v1.4 workbook
 python bft/tests/excel_recalc.py bft/tests/cases.json > bft/tests/excel_results.json   # LibreOffice recalc
-node bft/tests/compare_web_to_excel.js                                      # 640/640 values must match
+node bft/tests/compare_web_to_excel.js                                      # v1.4: 640/640 values must match
+python bft/tools/build_v1_5.py
+python bft/tests/excel_recalc_v1_5.py bft/tests/cases_v1_5.json > bft/tests/excel_results_v1_5.json
+node bft/tests/compare_web_to_excel_v1_5.js                                 # v1.5: 1744/1744 values must match
 ```
