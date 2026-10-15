@@ -9,6 +9,8 @@ An Excel workbook and a web page with identical logic.
 | `web/bft_estimator_v1.4.html` | Web tool v1.4, single file, open it in a browser |
 | `Battery_Fuse_Block_Cost_Estimator_v1.5.xlsx` | v1.5, built by `tools/build_v1_5.py` (runs the v1.4 build, then applies v1.5) |
 | `web/bft_estimator_v1.5.html` | Web tool v1.5 |
+| `Battery_Fuse_Block_Cost_Estimator_v1.6.xlsx` | v1.6, built by `tools/build_v1_6.py` (runs the v1.5 build, then applies v1.6) |
+| `web/bft_estimator_v1.6.html` | Web tool v1.6 |
 | `tests/` | Checks that the web tool and the workbook agree |
 
 ## v1.4 changes
@@ -33,6 +35,16 @@ The Keepout Zones sheet is replaced by a **Layout** sheet (web tab "Layout"):
 - **Pitch.** Each fuse type has a pitch override (blank = auto). You can also switch the walls between fuses off. Without walls, the auto pitch is body + creepage instead of body + divider, and sockets may overlap. A pitch below auto is flagged.
 - **Battery fit.** Max length and depth (cover outside) are flagged, not enforced.
 
+## v1.6 changes
+
+- **OEM socket clearance diameter** is now a direct input per bolt size (Assumptions F31:F33). It is the socket plus the plastic protector plus the clearance to the protector. Socket OD and B17 are kept for reference only.
+- **B+ corner, Left or Right.** This mirrors the drawing only, so size and cost are unchanged. When short-side outputs exit at the B+ end, the short-side column tucks under the B+ corner and B+ stays in the corner.
+- **Short-side bus** has three options:
+  - *One piece L*: copper is costed on its rectangular blank, so the scrap counts.
+  - *Second bar laser welded*: one laser weld joint, plus a lap of one bus width.
+  - *Second bar bolted*: one bolt of the B+ stud size plus a bolted joint, plus the same lap.
+- **Copper scrap credit** (Assumptions B66, placeholder 0) is the share of the copper price recovered for blank scrap.
+
 ## Rebuild and check
 
 ```
@@ -42,4 +54,7 @@ node bft/tests/compare_web_to_excel.js                                      # v1
 python bft/tools/build_v1_5.py
 python bft/tests/excel_recalc_v1_5.py bft/tests/cases_v1_5.json > bft/tests/excel_results_v1_5.json
 node bft/tests/compare_web_to_excel_v1_5.js                                 # v1.5: 1744/1744 values must match
+python bft/tools/build_v1_6.py
+python bft/tests/excel_recalc_v1_6.py bft/tests/cases_v1_6.json > bft/tests/excel_results_v1_6.json
+node bft/tests/compare_web_to_excel_v1_6.js                                 # v1.6: 3164/3164 values must match
 ```
