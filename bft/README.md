@@ -11,6 +11,8 @@ An Excel workbook and a web page with identical logic.
 | `web/bft_estimator_v1.5.html` | Web tool v1.5 |
 | `Battery_Fuse_Block_Cost_Estimator_v1.6.xlsx` | v1.6, built by `tools/build_v1_6.py` (runs the v1.5 build, then applies v1.6) |
 | `web/bft_estimator_v1.6.html` | Web tool v1.6 |
+| `Battery_Fuse_Block_Cost_Estimator_v1.7.xlsx` | v1.7, built by `tools/build_v1_7.py` (runs the v1.6 build, then applies v1.7) |
+| `web/bft_estimator_v1.7.html` | Web tool v1.7 |
 | `tests/` | Checks that the web tool and the workbook agree |
 
 ## v1.4 changes
@@ -45,6 +47,14 @@ The Keepout Zones sheet is replaced by a **Layout** sheet (web tab "Layout"):
   - *Second bar bolted*: one bolt of the B+ stud size plus a bolted joint, plus the same lap.
 - **Copper scrap credit** (Assumptions B66, placeholder 0) is the share of the copper price recovered for blank scrap.
 
+## v1.7 changes
+
+- **Ambient temperature** (Estimator B15, default 105 C underhood; use 85 C for interior). **Max busbar temperature** is Assumptions B69 (150 C placeholder). The Busbar Sizer's allowed rise is now max temp minus ambient, not an input.
+- **Busbar alloy conductivity** in % IACS (Assumptions B72, 100 = pure copper). The rating factor (B73) scales the ampacity by the square root of conductivity, and lowers it for copper's higher resistance at the max temperature. The design current density used for the bus (B74) is B14 x sqrt(% IACS / 100).
+- **Estimated bus temperature at load** (Estimator B31, shown in E15 with an OVER flag). The bus is still sized by current density.
+- **Output-side cover skirt drop** (Assumptions B77, 20 mm placeholder). The cover skirt over the outputs reaches below the eyelet's conductive area to keep it isolated from ground. This adds cover volume, and Estimator E67 shows how far the skirt reaches below the base floor.
+- **Busbar Sizer chart fixed in Excel.** It was empty because the file had no cached values (Excel Protected View shows blanks) and the chart XML was incomplete. The build now writes cached values and a complete chart. MINIFS (Excel 2019+) is replaced by a helper column (I26:I37).
+
 ## Rebuild and check
 
 ```
@@ -57,4 +67,7 @@ node bft/tests/compare_web_to_excel_v1_5.js                                 # v1
 python bft/tools/build_v1_6.py
 python bft/tests/excel_recalc_v1_6.py bft/tests/cases_v1_6.json > bft/tests/excel_results_v1_6.json
 node bft/tests/compare_web_to_excel_v1_6.js                                 # v1.6: 3164/3164 values must match
+python bft/tools/build_v1_7.py                                               # also writes cached values (needs LibreOffice)
+python bft/tests/excel_recalc_v1_7.py bft/tests/cases_v1_7.json > bft/tests/excel_results_v1_7.json
+node bft/tests/compare_web_to_excel_v1_7.js                                 # v1.7: 4900/4900 values must match
 ```
