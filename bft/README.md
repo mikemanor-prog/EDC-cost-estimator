@@ -15,6 +15,8 @@ An Excel workbook and a web page with identical logic.
 | `web/bft_estimator_v1.7.html` | Web tool v1.7 |
 | `Battery_Fuse_Block_Cost_Estimator_v1.8.xlsx` | v1.8, built by `tools/build_v1_8.py` (runs the v1.7 build, then applies v1.8) |
 | `web/bft_estimator_v1.8.html` | Web tool v1.8 |
+| `Battery_Fuse_Block_Cost_Estimator_v1.9.xlsx` | v1.9, built by `tools/build_v1_9.py` (runs the v1.8 build, then applies v1.9) |
+| `web/bft_estimator_v1.9.html` | Web tool v1.9 |
 | `tests/` | Checks that the web tool and the workbook agree |
 
 ## v1.4 changes
@@ -65,6 +67,13 @@ The Keepout Zones sheet is replaced by a **Layout** sheet (web tab "Layout"):
 
 With zones off, 0% scrap credit and 105 C ambient, the bus is 34.8 mm wide (37.5 mm in v1.7) and the part costs $6.69. At 85 C it is 26.9 mm wide and costs $6.39. These results depend on k = 5.95, which is not calibrated.
 
+## v1.9 changes
+
+- **Busbar thickness is limited to copper mill stock sizes.** The stock list is on Assumptions A83:A94: a placeholder of 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0 and 5.0 mm, plus three blank slots. Edit it to match your supplier.
+- The Estimator copper thickness (B7) and the Busbar Sizer known bar thickness (B9) are now picked from that list.
+- **The Busbar Sizer sweeps the stock thicknesses** instead of width : thickness ratios. Each row is the narrowest bar of that thickness that carries the current at the allowed rise. It is solved with 6 Newton steps in columns L to R. The ratio is shown as a result. A row fits when its width is within the max width.
+- Width is still continuous, because strip is slit to width.
+
 ## Rebuild and check
 
 ```
@@ -83,4 +92,7 @@ node bft/tests/compare_web_to_excel_v1_7.js                                 # v1
 python bft/tools/build_v1_8.py
 python bft/tests/excel_recalc_v1_8.py bft/tests/cases_v1_8.json > bft/tests/excel_results_v1_8.json
 node bft/tests/compare_web_to_excel_v1_8.js                                 # v1.8: 6225/6225 values must match
+python bft/tools/build_v1_9.py
+python bft/tests/excel_recalc_v1_9.py bft/tests/cases_v1_9.json > bft/tests/excel_results_v1_9.json
+node bft/tests/compare_web_to_excel_v1_9.js                                 # v1.9: 7364/7364 values must match
 ```
