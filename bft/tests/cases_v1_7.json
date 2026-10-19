@@ -1,0 +1,135 @@
+[
+{},
+{
+"Layout!B20": "No"
+},
+{
+"Layout!B5": "No",
+"Layout!D12": 26,
+"Layout!C20": "Yes",
+"Layout!C27": 50,
+"Layout!B7": 200,
+"Layout!B8": 120
+},
+{
+"Layout!C14": 2,
+"Layout!C20": "Yes",
+"Layout!C27": 40,
+"Layout!C25": 1
+},
+{
+"Layout!C12": 1,
+"Layout!C13": 1,
+"Layout!B6": "B+ end",
+"Estimator!B12": "Battery terminal",
+"Estimator!B5": 48,
+"Estimator!B13": "Snap-in from bottom",
+"Estimator!B14": "Laser weld",
+"Layout!B7": 150,
+"Layout!B8": 200
+},
+{
+"Layout!C12": 2,
+"Layout!C13": 1,
+"Layout!C14": 5,
+"Layout!B5": "No",
+"Layout!B20": "No",
+"Layout!D14": 18
+},
+{
+"Estimator!B6": 600,
+"Estimator!B7": 0.8,
+"Estimator!B5": 48,
+"Estimator!B12": "Battery terminal",
+"Layout!C20": "Yes",
+"Layout!C21": "End of row",
+"Layout!C25": 0,
+"Layout!C27": 50,
+"Layout!B28": 40,
+"Layout!B26": "M8",
+"Layout!C26": "M8",
+"Layout!C13": 1,
+"Layout!B6": "B+ end",
+"Estimator!B11": 2,
+"Estimator!B10": "M6"
+},
+{
+"Layout!C14": 2,
+"Layout!C20": "Yes",
+"Layout!C21": "End of row",
+"Layout!C27": 30,
+"Layout!B24": 10,
+"Estimator!B19": 0
+},
+{
+"Layout!C14": 2,
+"Layout!F6": "Second bar laser welded"
+},
+{
+"Layout!C12": 1,
+"Layout!C13": 1,
+"Layout!B6": "B+ end",
+"Layout!F6": "Second bar bolted",
+"Layout!F5": "Right",
+"Assumptions!B66": 0.85
+},
+{
+"Layout!C14": 2,
+"Layout!C13": 1,
+"Layout!B6": "B+ end",
+"Assumptions!F31": 28,
+"Assumptions!F32": 24,
+"Layout!B5": "No",
+"Assumptions!B66": 0.5
+},
+{
+"Layout!C12": 2,
+"Layout!C13": 1,
+"Layout!C14": 2,
+"Layout!B6": "B+ end",
+"Layout!B20": "No"
+},
+{
+"Assumptions!F31": 28,
+"Layout!B20": "No"
+},
+{
+"Assumptions!F31": 28,
+"Layout!B20": "No",
+"Layout!B5": "No"
+},
+{
+"Estimator!B15": 85
+},
+{
+"Estimator!B15": 85,
+"Assumptions!B69": 125,
+"Layout!C12": 1,
+"Layout!C14": 2,
+"Assumptions!B77": 35
+},
+{
+"Assumptions!B70": 0.0039,
+"Assumptions!B71": 40,
+"Estimator!B6": 450,
+"Assumptions!B77": 0
+},
+{
+"Estimator!B15": 125,
+"Assumptions!B69": 140,
+"Busbar Sizer!B5": 200,
+"Layout!C13": 1,
+"Layout!B6": "B+ end",
+"Layout!B20": "No"
+},
+{
+"Assumptions!B72": 65,
+"Layout!C27": 80
+},
+{
+"Assumptions!B72": 88,
+"Estimator!B15": 85,
+"Busbar Sizer!B5": 250,
+"Layout!C13": 1
+}
+]
