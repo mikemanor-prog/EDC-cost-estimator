@@ -1,0 +1,569 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>EDC Plastic Cost Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: two-column engineering worksheet — inputs rail on the left, results + to-scale plan on the right, assumptions below. Dark-first. */
+:root {
+  --bg: #13161b;
+  --panel: #1a1e25;
+  --field: #232831;
+  --line: #2c323d;
+  --fg: #e4e7ec;
+  --muted: #8a93a2;
+  --accent: #f2b766;
+  --accent-ink: #2a1d08;
+  --link: #8fb8e8;
+  --c-micro2: #e6cd8c;
+  --c-micro3: #8db3e4;
+  --c-mcase: #9ccfa6;
+  --c-a1s: #c3b0ef;
+  --c-relay: #5f6b7b;
+  --c-warn: #ff9d6c;
+  --font-ui: "Barlow Semi Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eef0f3; --panel: #ffffff; --field: #f4f5f8; --line: #d7dbe2; --fg: #1a1e25; --muted: #5b6372;
+    --accent: #f2b766; --accent-ink: #2a1d08; --link: #2c64a8;
+    --c-micro2: #d9b558; --c-micro3: #5f93d6; --c-mcase: #6fb37c; --c-a1s: #a08ae0; --c-relay: #8a95a4; --c-warn: #c2521f;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eef0f3; --panel: #ffffff; --field: #f4f5f8; --line: #d7dbe2; --fg: #1a1e25; --muted: #5b6372;
+  --accent: #f2b766; --accent-ink: #2a1d08; --link: #2c64a8;
+  --c-micro2: #d9b558; --c-micro3: #5f93d6; --c-mcase: #6fb37c; --c-a1s: #a08ae0; --c-relay: #8a95a4; --c-warn: #c2521f;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 16px; line-height: 1.4; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: grid; gap: 20px; }
+
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; justify-content: space-between; }
+h1 { font-size: clamp(26px, 3.2vw, 34px); font-weight: 700; margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+button { font: inherit; cursor: pointer; }
+.btn { border-radius: 6px; padding: 8px 16px; font-weight: 600; border: 1px solid var(--line); background: transparent; color: var(--link); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:focus-visible, input:focus-visible, select:focus-visible, .step:focus-visible, .seg button:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.label { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+.main { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.inputs { display: grid; gap: 18px; }
+.group { display: grid; gap: 4px; }
+.row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding-block: 8px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.sw { width: 12px; height: 12px; border-radius: 2px; }
+.sw.relay { background: transparent; border: 1.5px dashed var(--c-relay); }
+.pname { font-weight: 600; font-size: 17px; }
+.pmeta { color: var(--muted); font-size: 14px; }
+.ph { color: var(--c-warn); font-size: 12px; font-weight: 600; margin-left: 4px; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
+.step { width: 30px; height: 32px; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; }
+.step:hover { color: var(--fg); }
+.stepper input { width: 46px; height: 32px; border: 0; background: transparent; color: var(--fg); text-align: center; font-family: var(--font-num); font-size: 15px; -moz-appearance: textfield; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; padding: 8px 6px; background: var(--field); color: var(--muted); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); font-weight: 600; }
+select, .field { font: inherit; font-family: var(--font-num); font-size: 14px; width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--fg); }
+.hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+
+.results { display: grid; gap: 20px; min-width: 0; }
+.summary { display: grid; gap: 10px; }
+.totals { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 32px; }
+.big { font-family: var(--font-num); font-size: clamp(40px, 6vw, 56px); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.stat .v { font-family: var(--font-num); font-size: 22px; font-weight: 500; }
+.stat .k { color: var(--muted); font-size: 14px; }
+.marg { color: var(--muted); font-size: 15px; margin: 0; }
+.marg b { color: var(--fg); font-family: var(--font-num); font-weight: 600; }
+
+.plan svg { width: 100%; height: auto; display: block; max-height: 520px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; color: var(--muted); font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.warn { color: var(--c-warn); font-size: 14px; margin: 8px 0 0; }
+
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.part h3 { margin: 0; font-size: 19px; font-weight: 700; }
+.part .dims { font-family: var(--font-num); color: var(--link); font-size: 15px; margin: 2px 0 10px; }
+.kv { display: grid; grid-template-columns: 1fr auto; margin: 10px 0 0; }
+.kv dt, .kv dd { padding-block: 5px; border-bottom: 1px dashed var(--line); margin: 0; }
+.kv dd { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; }
+.kv .tot { color: var(--accent); font-weight: 600; border-bottom: 0; }
+
+details.assume > summary { cursor: pointer; font-weight: 700; font-size: 18px; list-style: none; display: flex; align-items: center; gap: 8px; }
+details.assume > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+details.assume[open] > summary::before { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { details.assume > summary::before { transition: none; } }
+.sect { margin-top: 20px; display: grid; gap: 10px; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 460px; }
+th { text-align: left; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 8px; }
+td { padding: 5px 8px; border-top: 1px solid var(--line); }
+td .field { max-width: 110px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
+.grid4 label { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; align-items: center; color: var(--fg); }
+.note { color: var(--muted); font-size: 14px; margin: 0; max-width: 70ch; }
+.grid4.one { grid-template-columns: minmax(0, 1fr); }
+table.ovr { min-width: 0; }
+table.ovr td .field { max-width: 92px; }
+.copybox { width: 100%; min-height: 120px; font-family: var(--font-num); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>EDC Plastic Cost Estimator</h1>
+      <p class="sub">Enter fuse and relay counts. Get housing + cover size, weight and per-part cost. Rev v1.1</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="copyBtn" type="button">Copy summary</button>
+      <button class="btn" id="resetBtn" type="button">Reset to example</button>
+    </div>
+  </header>
+  <textarea class="field copybox" id="copyFallback" hidden readonly aria-label="Summary text"></textarea>
+
+  <div class="main">
+    <aside class="panel inputs" aria-label="Inputs">
+      <div class="group"><p class="label">Fuses</p><div id="fuseRows"></div></div>
+      <div class="group"><p class="label">PCB relays</p><div id="relayRows"></div></div>
+      <div class="group">
+        <p class="label">Layout</p>
+        <p class="hint" style="margin:0 0 6px">Relays relative to fuses</p>
+        <div class="seg" role="group" aria-label="Relays relative to fuses">
+          <button type="button" id="layBeside" aria-pressed="true">Beside (adds area)</button>
+          <button type="button" id="layUnder" aria-pressed="false">Under (stacked)</button>
+        </div>
+      </div>
+      <div class="group">
+        <p class="label">Labor (Durango placeholders)</p>
+        <div class="grid4 one">
+          <label for="labor"><span>Labor rate, $/hr loaded</span><input class="field" id="labor" type="number" step="0.25" min="0"></label>
+          <label for="ops"><span>Operators per press</span><input class="field" id="ops" type="number" step="0.05" min="0"></label>
+        </div>
+      </div>
+      <div class="group">
+        <p class="label">Press and machine rate</p>
+        <p class="hint" style="margin:0 0 6px">Leave blank to use the rule of thumb (grey). Press in US tons; machine rate excludes labor.</p>
+        <div class="tbl-wrap"><table class="ovr"><thead><tr><th>Part</th><th>Press t</th><th>Machine $/hr</th></tr></thead><tbody id="ovrRows"></tbody></table></div>
+      </div>
+      <div class="group">
+        <label class="hint" for="cavities" style="margin:0 0 6px">Cavities per mold</label>
+        <select id="cavities">
+          <option value="1">1-cavity</option>
+          <option value="2" selected>2-cavity</option>
+          <option value="4">4-cavity</option>
+          <option value="8">8-cavity</option>
+        </select>
+      </div>
+    </aside>
+
+    <section class="results">
+      <div class="panel summary">
+        <p class="label">Plastic cost per EDC set</p>
+        <div class="totals">
+          <div class="big" id="totCost">$0.00</div>
+          <div class="stat"><div class="v" id="totMass">0 g</div><div class="k">total plastic</div></div>
+          <div class="stat"><div class="v" id="totFoot">0 × 0 mm</div><div class="k">outer footprint</div></div>
+          <div class="stat"><div class="v" id="totStack">0 mm</div><div class="k">stack height</div></div>
+        </div>
+        <p class="marg" id="marginal"></p>
+      </div>
+
+      <div class="panel plan">
+        <p class="label">Plan view (top, to scale)</p>
+        <svg id="plan" role="img" aria-label="Top view of the housing with fuse and relay cavities drawn to scale"></svg>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--c-micro2)"></i>Micro2</span>
+          <span><i class="sw" style="background:var(--c-micro3)"></i>Micro3</span>
+          <span><i class="sw" style="background:var(--c-mcase)"></i>M-Case</span>
+          <span><i class="sw" style="background:var(--c-a1s)"></i>A1S</span>
+          <span><i class="sw relay"></i>PCB relay</span>
+        </div>
+        <p class="warn" id="packWarn" hidden></p>
+      </div>
+
+      <div class="parts" id="parts"></div>
+    </section>
+  </div>
+
+  <details class="assume panel" id="assume" open>
+    <summary>Assumptions (edit to match your parts)</summary>
+
+    <div class="sect">
+      <p class="label">Component footprints</p>
+      <p class="note">L × W is the cavity pitch on the housing, including the rib between cavities. H is cavity depth (fuses) or body height (relays). A1S is a placeholder until you have real numbers.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Part</th><th>L mm</th><th>W mm</th><th>H mm</th></tr></thead><tbody id="fpRows"></tbody></table></div>
+    </div>
+
+    <div class="sect">
+      <p class="label">Housing geometry</p>
+      <div class="grid4" id="geoFields"></div>
+    </div>
+
+    <div class="sect">
+      <p class="label">Resins</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Resin</th><th>Density g/cm³</th><th>$/kg</th></tr></thead><tbody id="resinRows"></tbody></table></div>
+    </div>
+
+    <div class="sect">
+      <p class="label">Molding</p>
+      <div class="grid4" id="moldFields"></div>
+      <p class="note">Cycle time = base + k × wall². Rule-of-thumb clamp (US t) = projected area (in²) × cavities × (1 + runner area %) × tons/in². This is the same as the metric form tonnes = area (cm²) × pressure (kgf/cm²) ÷ 1000 × cavities; 1 US t/in² = 140.6 kgf/cm². The press used is your entry, or the rule of thumb if blank. Machine rate comes from the band of the press used unless you override it. Molding cost per part = (machine + labor × operators) × cycle ÷ cavities. Material = part mass × (1 + runner volume %) × $/kg. Band rates are North American placeholders; replace them with Durango rates.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+const PARTS = [
+  { id: "micro2",   name: "Micro2",               kind: "fuse",  color: "--c-micro2" },
+  { id: "micro3",   name: "Micro3",               kind: "fuse",  color: "--c-micro3" },
+  { id: "mcase",    name: "M-Case",               kind: "fuse",  color: "--c-mcase" },
+  { id: "a1s",      name: "A1S",                  kind: "fuse",  color: "--c-a1s", placeholder: true },
+  { id: "relMicro", name: "Micro PCB relay",      kind: "relay", amps: "up to 35 A" },
+  { id: "relMini",  name: "Mini PCB relay",       kind: "relay", amps: "35–70 A" },
+  { id: "relHigh",  name: "High-current PCB relay", kind: "relay", amps: "70 A+" },
+];
+const RESINS = ["PA66-GF30", "PBT-GF30", "PP-T20"];
+
+const EXAMPLE = {
+  counts: { micro2: 20, micro3: 10, mcase: 6, a1s: 2, relMicro: 8, relMini: 4, relHigh: 0 },
+  layout: "beside",
+  cavities: 2,
+  fp: {
+    micro2: [11.5, 6, 16], micro3: [17, 6.5, 15], mcase: [15, 10, 14], a1s: [20, 12, 18],
+    relMicro: [16, 14, 15], relMini: [24, 18, 22], relHigh: [32, 24, 28],
+  },
+  geo: { pack: 0.65, conn: 2500, edge: 6, aspect: 1.5, wall: 2.5, rib: 1.2, stack: 10, coverWall: 2,
+         fuseHead: 8, coverClear: 6, minLower: 15 },
+  resins: { "PA66-GF30": [1.36, 3.8], "PBT-GF30": [1.53, 3.2], "PP-T20": [1.05, 1.8] },
+  mold: { runVol: 8, runArea: 10, base: 12, k: 2, clamp: 3.5, b1t: 300, b1r: 45, b2t: 500, b2r: 60, b3t: 800, b3r: 80, b4r: 110 },
+  labor: 6, ops: 0.5,
+  press: { housing: null, upper: null, lower: null },   // null = rule of thumb
+  mrate: { housing: null, upper: null, lower: null },   // null = band of the press used
+  partResin: { housing: "PA66-GF30", upper: "PA66-GF30", lower: "PA66-GF30" },
+};
+const PART_KEYS = [["housing", "Main housing"], ["upper", "Upper cover"], ["lower", "Lower cover"]];
+const TON_US_TO_METRIC = 0.90718474;
+
+const GEO_FIELDS = [
+  ["pack", "Packing efficiency (0–1)", 0.01], ["conn", "Connector / stud area, mm²", 50], ["edge", "Edge margin, mm", 0.5],
+  ["aspect", "Aspect ratio L:W", 0.05], ["wall", "Housing wall, mm", 0.1], ["rib", "Cavity rib, mm", 0.1],
+  ["stack", "PCB + busbar stack, mm", 0.5], ["coverWall", "Cover wall, mm", 0.1], ["fuseHead", "Fuse head above housing, mm", 0.5],
+  ["coverClear", "Cover clearance, mm", 0.5], ["minLower", "Min lower cover height, mm", 0.5],
+];
+const MOLD_FIELDS = [
+  ["runVol", "Runner volume, % of part volume", 1], ["runArea", "Runner projected area, % of part area", 1],
+  ["base", "Cycle base, s", 0.5], ["k", "Cooling k (s/mm²)", 0.1], ["clamp", "Clamp, US tons/in²", 0.1],
+  ["b1t", "Band 1: press below, t", 10], ["b1r", "Band 1 machine, $/hr", 1], ["b2t", "Band 2: press below, t", 10], ["b2r", "Band 2 machine, $/hr", 1],
+  ["b3t", "Band 3: press below, t", 10], ["b3r", "Band 3 machine, $/hr", 1], ["b4r", "Band 4 (above) machine, $/hr", 1],
+];
+
+const STORE_KEY = "edc-estimator-v1.1";
+const clone = (o) => JSON.parse(JSON.stringify(o));
+let S = clone(EXAMPLE);
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+  if (saved && saved.counts && saved.fp && saved.geo && saved.mold) {
+    S = Object.assign(clone(EXAMPLE), saved);
+    for (const k of ["mold", "geo", "press", "mrate"]) S[k] = Object.assign(clone(EXAMPLE[k]), saved[k] || {});
+  }
+} catch (e) {}
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} };
+
+// ---------- model ----------
+const isNum = (v) => typeof v === "number" && isFinite(v);
+function partCost(key, L, W, H, wall, vol, resin, s) {
+  const m = s.mold, [rho, perKg] = s.resins[resin];
+  const run = m.runVol / 100;
+  const mass = vol / 1000 * rho;                                    // g, one part
+  const material = mass / 1000 * (1 + run) * perKg;                 // part + its share of the runner
+  const shotVol = vol / 1000 * s.cavities * (1 + run);              // cm³
+  const shotG = mass * s.cavities * (1 + run);
+  const proj = (L * W / 645.16) * s.cavities * (1 + m.runArea / 100);   // in², parts + runner
+  const tonsRT = proj * m.clamp;                                    // US tons
+  const tonsRTm = tonsRT * TON_US_TO_METRIC;
+  const tons = isNum(s.press[key]) ? s.press[key] : tonsRT;
+  const cycle = m.base + m.k * wall * wall;
+  const band = tons < m.b1t ? m.b1r : tons < m.b2t ? m.b2r : tons < m.b3t ? m.b3r : m.b4r;
+  const rate = isNum(s.mrate[key]) ? s.mrate[key] : band;
+  const laborHr = s.labor * s.ops;
+  const molding = (rate + laborHr) / 3600 * cycle / s.cavities;
+  return { L, W, H, vol, mass, material, shotVol, shotG, proj, tonsRT, tonsRTm, tons, cycle, band, rate, laborHr,
+           molding, cost: material + molding, resin };
+}
+
+function compute(s) {
+  const g = s.geo;
+  let fuseArea = 0, relayArea = 0, maxFuseH = 0, maxRelayH = 0, ribVol = 0;
+  for (const p of PARTS) {
+    const n = Math.max(0, s.counts[p.id] || 0);
+    const [l, w, h] = s.fp[p.id];
+    if (!n) continue;
+    if (p.kind === "fuse") {
+      fuseArea += n * l * w; maxFuseH = Math.max(maxFuseH, h);
+      ribVol += n * (l + w) * g.rib * h;                            // each cavity owns half its rib perimeter
+    } else {
+      relayArea += n * l * w; maxRelayH = Math.max(maxRelayH, h);
+    }
+  }
+  const comp = s.layout === "beside" ? fuseArea + relayArea : Math.max(fuseArea, relayArea);
+  const area = comp / g.pack + g.conn;
+  const cw = Math.sqrt(area / g.aspect), cl = cw * g.aspect;        // usable cavity field
+  const hL = cl + 2 * g.edge + 2 * g.wall, hW = cw + 2 * g.edge + 2 * g.wall;
+  const hH = maxFuseH + g.stack;
+  const hVol = hL * hW * g.wall + 2 * (hL + hW) * hH * g.wall + ribVol;
+
+  const off = 2 * (g.coverWall + 0.5);
+  const cL = hL + off, cW = hW + off;
+  const uH = g.fuseHead + g.coverClear;
+  const lH = Math.max(g.minLower, maxRelayH + g.coverClear);
+  const coverVol = (H) => cL * cW * g.coverWall + 2 * (cL + cW) * H * g.coverWall;
+
+  const housing = partCost("housing", hL, hW, hH, g.wall, hVol, s.partResin.housing, s);
+  const upper = partCost("upper", cL, cW, uH, g.coverWall, coverVol(uH), s.partResin.upper, s);
+  const lower = partCost("lower", cL, cW, lH, g.coverWall, coverVol(lH), s.partResin.lower, s);
+  return {
+    housing, upper, lower, field: { x0: g.wall + g.edge, y0: g.wall + g.edge, w: cl, h: cw },
+    total: housing.cost + upper.cost + lower.cost,
+    mass: housing.mass + upper.mass + lower.mass,
+    stack: hH + uH + lH,
+  };
+}
+
+// ---------- formatting ----------
+const $ = (id) => document.getElementById(id);
+const money = (v) => "$" + v.toFixed(2);
+const f0 = (v) => Math.round(v).toString();
+const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
+
+// ---------- inputs ----------
+function buildInputs() {
+  const mk = (p) => {
+    const [l, w] = S.fp[p.id];
+    const meta = `${l} × ${w} mm pitch${p.amps ? " · ≈ " + p.amps : ""}`;
+    return `<div class="row">
+      <i class="sw ${p.kind === "relay" ? "relay" : ""}" style="${p.kind === "fuse" ? `background:var(${p.color})` : ""}"></i>
+      <div><div class="pname">${p.name}${p.placeholder ? '<span class="ph">placeholder size</span>' : ""}</div>
+           <div class="pmeta" id="meta-${p.id}">${meta}</div></div>
+      <div class="stepper">
+        <button class="step" type="button" data-step="-1" data-id="${p.id}" aria-label="Fewer ${p.name}">−</button>
+        <input id="n-${p.id}" type="number" min="0" step="1" inputmode="numeric" value="${S.counts[p.id]}" aria-label="${p.name} count">
+        <button class="step" type="button" data-step="1" data-id="${p.id}" aria-label="More ${p.name}">+</button>
+      </div></div>`;
+  };
+  $("fuseRows").innerHTML = PARTS.filter(p => p.kind === "fuse").map(mk).join("");
+  $("relayRows").innerHTML = PARTS.filter(p => p.kind === "relay").map(mk).join("");
+
+  $("fpRows").innerHTML = PARTS.map(p => `<tr><td>${p.name}</td>` + [0, 1, 2].map(i =>
+    `<td><input class="field" id="fp-${p.id}-${i}" type="number" step="0.5" min="0" value="${S.fp[p.id][i]}" aria-label="${p.name} ${"LWH"[i]}"></td>`).join("") + "</tr>").join("");
+  $("geoFields").innerHTML = GEO_FIELDS.map(([k, label, st]) =>
+    `<label for="geo-${k}"><span>${label}</span><input class="field" id="geo-${k}" type="number" step="${st}" min="0" value="${S.geo[k]}"></label>`).join("");
+  $("resinRows").innerHTML = RESINS.map(r => `<tr><td>${r}</td>` + [0, 1].map(i =>
+    `<td><input class="field" id="rs-${r}-${i}" type="number" step="0.01" min="0" value="${S.resins[r][i]}" aria-label="${r} ${i ? "price per kg" : "density"}"></td>`).join("") + "</tr>").join("");
+  $("moldFields").innerHTML = MOLD_FIELDS.map(([k, label, st]) =>
+    `<label for="mold-${k}"><span>${label}</span><input class="field" id="mold-${k}" type="number" step="${st}" min="0" value="${S.mold[k]}"></label>`).join("");
+  $("ovrRows").innerHTML = PART_KEYS.map(([k, n]) => `<tr><td>${n}</td>
+    <td><input class="field" id="press-${k}" type="number" step="10" min="0" value="${S.press[k] ?? ""}" aria-label="${n} press used, US tons"></td>
+    <td><input class="field" id="mrate-${k}" type="number" step="1" min="0" value="${S.mrate[k] ?? ""}" aria-label="${n} machine rate, $ per hour"></td></tr>`).join("");
+  $("labor").value = S.labor;
+  $("ops").value = S.ops;
+  $("cavities").value = String(S.cavities);
+  setLayoutButtons();
+}
+
+function setLayoutButtons() {
+  $("layBeside").setAttribute("aria-pressed", String(S.layout === "beside"));
+  $("layUnder").setAttribute("aria-pressed", String(S.layout === "under"));
+}
+
+const num = (el) => { const v = parseFloat(el.value); return isFinite(v) && v >= 0 ? v : 0; };
+
+document.addEventListener("input", (e) => {
+  const t = e.target, id = t.id || "";
+  if (id.startsWith("n-")) S.counts[id.slice(2)] = Math.floor(num(t));
+  else if (id.startsWith("fp-")) { const [, p, i] = id.split("-"); S.fp[p][+i] = num(t); refreshMeta(p); }
+  else if (id.startsWith("geo-")) S.geo[id.slice(4)] = num(t);
+  else if (id.startsWith("rs-")) { const i = +id.slice(-1); S.resins[id.slice(3, -2)][i] = num(t); }
+  else if (id.startsWith("mold-")) S.mold[id.slice(5)] = num(t);
+  else if (id.startsWith("res-")) S.partResin[id.slice(4)] = t.value;
+  else if (id.startsWith("press-") || id.startsWith("mrate-")) {
+    const [grp, k] = id.split("-"); const v = parseFloat(t.value);
+    S[grp][k] = t.value.trim() === "" || !isFinite(v) || v < 0 ? null : v;
+  }
+  else if (id === "labor" || id === "ops") S[id] = num(t);
+  else if (id === "cavities") S.cavities = +t.value;
+  else return;
+  update();
+});
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".step");
+  if (!b) return;
+  const id = b.dataset.id;
+  S.counts[id] = Math.max(0, (S.counts[id] || 0) + +b.dataset.step);
+  $("n-" + id).value = S.counts[id];
+  update();
+});
+$("layBeside").onclick = () => { S.layout = "beside"; setLayoutButtons(); update(); };
+$("layUnder").onclick = () => { S.layout = "under"; setLayoutButtons(); update(); };
+$("resetBtn").onclick = () => { S = clone(EXAMPLE); buildInputs(); update(); };
+
+function refreshMeta(id) {
+  const p = PARTS.find(q => q.id === id), [l, w] = S.fp[id];
+  $("meta-" + id).textContent = `${l} × ${w} mm pitch${p.amps ? " · ≈ " + p.amps : ""}`;
+}
+
+// ---------- plan view ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, text) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null) continue;
+    if (k === "fill" || k === "stroke" || k === "font-family") n.style.setProperty(k, v);   // lets var() resolve
+    else n.setAttribute(k, v);
+  }
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function drawPlan(r) {
+  const svg = $("plan");
+  const { L, W } = r.housing;
+  const padL = 22, padT = 20, pad = 4;
+  svg.setAttribute("viewBox", `${-padL} ${-padT} ${L + padL + pad} ${W + padT + pad}`);
+  svg.replaceChildren();
+  const ink = "var(--muted)";
+  const fs = Math.max(4, L / 40);
+
+  // dimension lines
+  svg.append(el("line", { x1: 0, y1: -8, x2: L, y2: -8, stroke: "var(--link)", "stroke-width": 0.4 }));
+  for (const x of [0, L]) svg.append(el("line", { x1: x, y1: -11, x2: x, y2: -5, stroke: "var(--link)", "stroke-width": 0.4 }));
+  svg.append(el("text", { x: L / 2, y: -11, "text-anchor": "middle", fill: "var(--fg)", "font-size": fs, "font-family": "var(--font-num)" }, f1(L) + " mm"));
+  svg.append(el("line", { x1: -10, y1: 0, x2: -10, y2: W, stroke: ink, "stroke-width": 0.4 }));
+  for (const y of [0, W]) svg.append(el("line", { x1: -13, y1: y, x2: -7, y2: y, stroke: ink, "stroke-width": 0.4 }));
+  svg.append(el("text", { x: -13, y: W / 2, transform: `rotate(-90 -13 ${W / 2})`, "text-anchor": "middle", fill: "var(--fg)", "font-size": fs, "font-family": "var(--font-num)" }, f1(W) + " mm"));
+
+  // housing outline + usable field
+  svg.append(el("rect", { x: 0, y: 0, width: L, height: W, rx: 2, fill: "var(--field)", stroke: "var(--fg)", "stroke-width": 0.7 }));
+  const F = r.field, g = S.geo;
+  const innerW = L - 2 * (g.wall + g.edge), innerH = W - 2 * (g.wall + g.edge);
+  svg.append(el("rect", { x: F.x0, y: F.y0, width: innerW, height: innerH, fill: "none", stroke: ink, "stroke-width": 0.3, "stroke-dasharray": "1.5 1.5" }));
+
+  // shelf-pack fuses, then start relays on a fresh row
+  let x = F.x0, y = F.y0, rowH = 0, overflow = false;
+  const gap = 1.2;
+  const place = (p, l, w) => {
+    if (x + l > F.x0 + innerW + 0.01 && x > F.x0) { x = F.x0; y += rowH; rowH = 0; }
+    const relay = p.kind === "relay";
+    svg.append(el("rect", {
+      x: x + 0.3, y: y + 0.3, width: Math.max(0, l - 0.6), height: Math.max(0, w - 0.6), rx: 0.8,
+      fill: relay ? "var(--c-relay)" : `var(${p.color})`, "fill-opacity": relay ? 0.35 : 0.85,
+      stroke: relay ? "var(--muted)" : "none", "stroke-width": 0.35, "stroke-dasharray": relay ? "1.2 0.8" : null,
+    }));
+    if (y + w > F.y0 + innerH + 0.01) overflow = true;
+    x += l; rowH = Math.max(rowH, w);
+  };
+  let started = false;
+  for (const kind of ["fuse", "relay"]) {
+    if (kind === "relay" && started && S.layout === "beside") { x = F.x0; y += rowH + gap * 3; rowH = 0; }
+    if (kind === "relay" && S.layout === "under") { x = F.x0; y = F.y0; rowH = 0; }
+    for (const p of PARTS.filter(q => q.kind === kind)) {
+      const n = S.counts[p.id] || 0, [l, w] = S.fp[p.id];
+      for (let i = 0; i < n; i++) { place(p, l, w); started = true; }
+    }
+  }
+  svg.append(el("text", { x: F.x0 + innerW - 2, y: F.y0 + innerH - 2, "text-anchor": "end", fill: ink, "font-size": fs * 0.8, "font-family": "var(--font-ui)" }, "routing + connector space"));
+
+  const warn = $("packWarn");
+  warn.hidden = !overflow;
+  warn.textContent = overflow ? "The cavities don't fit the field at this packing efficiency in a simple row layout. Lower the packing efficiency or check the footprints." : "";
+}
+
+// ---------- outputs ----------
+function partCard(title, key, p) {
+  const opts = RESINS.map(r => `<option${r === p.resin ? " selected" : ""}>${r}</option>`).join("");
+  return `<div class="panel part">
+    <h3>${title}</h3>
+    <div class="dims">${f0(p.L)} × ${f0(p.W)} × ${f0(p.H)} mm</div>
+    <select id="res-${key}" aria-label="${title} resin">${opts}</select>
+    <dl class="kv">
+      <dt>Volume</dt><dd>${f1(p.vol / 1000)} cm³</dd>
+      <dt>Mass</dt><dd>${f0(p.mass)} g</dd>
+      <dt>Shot*</dt><dd>${f0(p.shotG)} g</dd>
+      <dt>Material*</dt><dd>${money(p.material)}</dd>
+      <dt>Proj. area*</dt><dd>${f1(p.proj)} in²</dd>
+      <dt>Clamp, rule</dt><dd>${f0(p.tonsRT)} t (${f0(p.tonsRTm)} mt)</dd>
+      <dt>Press used</dt><dd>${f0(p.tons)} t</dd>
+      <dt>Cycle</dt><dd>${f0(p.cycle)} s</dd>
+      <dt>$/hr</dt><dd>${f0(p.rate)} + ${f1(p.laborHr)} labor</dd>
+      <dt>Molding</dt><dd>${money(p.molding)}</dd>
+      <dt class="tot">Part cost</dt><dd class="tot">${money(p.cost)}</dd>
+    </dl><p class="hint">* includes runner. t = US tons, mt = metric tonnes.</p></div>`;
+}
+
+function marginal(base, id) {
+  const s = clone(S); s.counts[id] = (s.counts[id] || 0) + 1;
+  return compute(s).total - base.total;
+}
+
+let last = null;
+function update() {
+  save();
+  const r = compute(S);
+  last = r;
+  $("totCost").textContent = money(r.total);
+  $("totMass").textContent = f0(r.mass) + " g";
+  $("totFoot").textContent = `${f0(r.upper.L)} × ${f0(r.upper.W)} mm`;
+  $("totStack").textContent = f0(r.stack) + " mm";
+  const m = [["Micro2", "micro2"], ["Micro3", "micro3"], ["Micro PCB relay", "relMicro"]]
+    .map(([n, id], i) => `${i ? n : "Each extra " + n} adds <b>${money(marginal(r, id))}</b>`).join(" · ");
+  $("marginal").innerHTML = m;
+  const focusId = document.activeElement && document.activeElement.id;
+  $("parts").innerHTML = partCard("Main housing", "housing", r.housing) + partCard("Upper cover", "upper", r.upper) + partCard("Lower cover", "lower", r.lower);
+  if (focusId && focusId.startsWith("res-")) $(focusId).focus();
+  for (const [k] of PART_KEYS) {
+    $("press-" + k).placeholder = f0(r[k].tonsRT);
+    $("mrate-" + k).placeholder = f0(r[k].band);
+  }
+  drawPlan(r);
+}
+
+// ---------- copy ----------
+function summaryText() {
+  const r = last, c = S.counts;
+  const line = (n, p) => `${n}: ${f0(p.L)} x ${f0(p.W)} x ${f0(p.H)} mm, ${p.resin}, ${f0(p.mass)} g (shot ${f0(p.shotG)} g), rule-of-thumb ${f0(p.tonsRT)} t, press ${f0(p.tons)} t / ${f0(p.cycle)} s, ${money(p.rate + p.laborHr)}/hr, ${money(p.cost)}`;
+  return [
+    `EDC plastic cost estimate: ${money(r.total)} per set, ${f0(r.mass)} g, ${f0(r.upper.L)} x ${f0(r.upper.W)} mm footprint, ${f0(r.stack)} mm stack`,
+    `Fuses: Micro2 ${c.micro2}, Micro3 ${c.micro3}, M-Case ${c.mcase}, A1S ${c.a1s}`,
+    `PCB relays: Micro ${c.relMicro}, Mini ${c.relMini}, High-current ${c.relHigh} (${S.layout === "beside" ? "beside fuses" : "stacked under fuses"})`,
+    `${S.cavities}-cavity molds, labor ${money(S.labor)}/hr x ${S.ops} operators per press`,
+    line("Main housing", r.housing), line("Upper cover", r.upper), line("Lower cover", r.lower),
+  ].join("\n");
+}
+$("copyBtn").onclick = () => {
+  const text = summaryText(), btn = $("copyBtn"), fb = $("copyFallback");
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy summary"), 1500); };
+  const fallback = () => { fb.value = text; fb.hidden = false; fb.focus(); fb.select(); btn.textContent = "Select and copy below"; };
+  try {
+    navigator.clipboard.writeText(text).then(() => { fb.hidden = true; done(); }, fallback);
+  } catch (e) { fallback(); }
+};
+
+buildInputs();
+update();
+</script>
+
+</body></html>
