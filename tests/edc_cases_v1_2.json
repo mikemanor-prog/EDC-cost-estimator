@@ -1,0 +1,6 @@
+[
+ {},
+ {"Estimator!B26": 250, "Estimator!C26": 360, "Estimator!D27": 38.5, "Estimator!B21": 5.25, "Estimator!B22": 1, "Estimator!C28": "Hot runner"},
+ {"Estimator!B7": 40, "Estimator!B9": 0, "Estimator!B13": 9, "Estimator!B14": 3, "Estimator!B16": "Under", "Estimator!B17": 4, "Estimator!B18": "PBT-GF30", "Estimator!B20": "PP-T20", "Assumptions!B35": 0.15, "Assumptions!C35": 0.2, "Assumptions!B43": 4.5, "Assumptions!B48": 400, "Assumptions!C50": 30, "Assumptions!B38": "Hot-to-cold", "Estimator!B28": "Cold runner"},
+ {"Estimator!B17": 8, "Estimator!B8": 30, "Estimator!C27": 0, "Estimator!D26": 0, "Assumptions!B35": 0, "Assumptions!C35": 0, "Estimator!B22": 0, "Assumptions!B36": 0.1, "Assumptions!C37": 0.02, "Estimator!D28": "Hot-to-cold", "Estimator!B28": "Hot runner"}
+]
