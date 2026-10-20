@@ -32,7 +32,7 @@ const set = {
 const partRows = { Mass: "mass", "Gate / runner type used": "gate", "Runner volume used": (p) => p.runVol / 100,
   "Runner area used": (p) => p.runArea / 100, "Material incl. runner": "material", "Shot volume incl. runner": "shotVol", "Shot weight incl. runner": "shotG",
   "Projected area incl. runner": "proj", "Rule-of-thumb clamp": "tonsRT", "Rule-of-thumb clamp (metric t)": "tonsRTm",
-  "Press used": "tons", "Cycle time": "cycle", "Machine rate from band": "band", "Machine rate used": "rate", "Labor": "laborHr",
+  "Press size": "tons", "Cycle time": "cycle", "Machine rate from band": "band", "Machine rate used": "rate", "Labor": "laborHr",
   "Molding": "molding", "Part cost": "cost" };
 const top = { "Housing L": (r) => r.housing.L, "Housing W": (r) => r.housing.W, "Housing H": (r) => r.housing.H, "Housing volume": (r) => r.housing.vol,
   "Cover L": (r) => r.upper.L, "Cover W": (r) => r.upper.W, "Upper cover H": (r) => r.upper.H, "Lower cover H": (r) => r.lower.H,

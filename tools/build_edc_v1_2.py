@@ -61,7 +61,7 @@ MOLD = [
 GATES = [("Cold runner", 0.15, 0.15), ("Hot-to-cold", 0.06, 0.05), ("Hot runner", 0.01, 0.0)]
 GATE_DEFAULT = "Cold runner"
 # Machine rate bands (machine only, labor is separate): key, label, up-to US tons, $/hr
-BANDS = [("b1", "Band 1", 300, 45), ("b2", "Band 2", 500, 60), ("b3", "Band 3", 800, 80), ("b4", "Band 4", None, 110)]
+BANDS = [("b1", "Band 1", 300, 31), ("b2", "Band 2", 500, 42), ("b3", "Band 3", 800, 56), ("b4", "Band 4", None, 77)]  # Mexico estimates
 TON_US_TO_METRIC = 0.90718474
 
 
@@ -209,14 +209,14 @@ for key, label, upto, rate in BANDS:
     inp(asm.cell(r, 3), rate, MONEY2)
     A[key + "_t"] = f"Assumptions!$B${r}"
     A[key + "_r"] = f"Assumptions!$C${r}"
-asm.cell(r - 3, 3).comment = Comment("North American placeholders. Replace with Durango machine rates "
+asm.cell(r - 3, 3).comment = Comment("Mexico estimates (machine only). Replace with Durango machine rates "
                                      "(machine only; labor is entered separately).", "Estimator")
 r += 2
 for line in [
     "Cycle time = base + k × wall².",
     "Rule-of-thumb clamp (US t) = projected area (in²) × cavities × (1 + runner area %) × tons/in².",
     "Same as the metric form: tonnes = area (cm²) × cavity pressure (kgf/cm²) ÷ 1000 × cavities. 1 US t/in² = 140.6 kgf/cm².",
-    "Press used = your press tons on the Estimator if entered, else the rule of thumb. Machine rate comes from the band of the press used unless overridden.",
+    "Press size = your press tons on the Estimator if entered, else the rule of thumb. Machine rate comes from the band of the press size unless overridden.",
     "Molding cost per part = (machine rate + labor rate × operators) × cycle ÷ cavities.",
     "Material = part mass × (1 + runner volume %) × $/kg. Shot = (part × cavities) + runner.",
     "Runner volume % and area % come from the gate / runner type of each part (default above, per-part choice on the Estimator).",
@@ -294,8 +294,8 @@ for key, label in [("housing", "Main housing resin"), ("upper", "Upper cover res
 r += 1
 est.cell(r, 1, "Labor rate ($/hr, loaded)").font = font()
 est.cell(r, 1).border = BOX
-inp(est.cell(r, 2), 6.0, MONEY2)
-est.cell(r, 2).comment = Comment("Placeholder for Durango, Mexico. Enter your plant's loaded operator rate.", "Estimator")
+inp(est.cell(r, 2), 3.5, MONEY2)
+est.cell(r, 2).comment = Comment("Mexico estimate. Enter your plant's loaded operator rate.", "Estimator")
 E["labor"] = f"Estimator!$B${r}"
 r += 1
 est.cell(r, 1, "Operators per press").font = font()
@@ -315,9 +315,9 @@ ovr_dv = DataValidation(type="decimal", operator="greaterThanOrEqual", formula1=
                         error="Enter a number of 0 or more, or leave blank.", showErrorMessage=True)
 est.add_data_validation(ovr_dv)
 for okey, label, note in [
-    ("press", "Press used (US t)", "Blank = rule-of-thumb clamp. Enter the press your plant will actually run "
+    ("press", "Press size (US t)", "Blank = rule-of-thumb clamp. Enter the press your plant will actually run "
                                    "(e.g. 250 when the minimum is 110 but that press is not available)."),
-    ("mrate", "Machine rate ($/hr)", "Blank = rate from the Assumptions band of the press used. Machine only, no labor."),
+    ("mrate", "Machine rate ($/hr)", "Blank = rate from the Assumptions band of the press size. Machine only, no labor."),
 ]:
     r += 1
     est.cell(r, 1, label).font = font()
@@ -446,7 +446,7 @@ for key, title, Lk, Wk, Hk, wall, Vk in PART_DEFS:
          lambda c, ref, b, key=key: f"={ref(key + '_proj')}*{g['clamp']}", N0)
     line(f"{key}_tonsRTm", "Rule-of-thumb clamp (metric t)",
          lambda c, ref, b, key=key: f"={ref(key + '_tonsRT')}*{TON_US_TO_METRIC}", N0)
-    line(f"{key}_tons", "Press used (US t)",
+    line(f"{key}_tons", "Press size (US t)",
          lambda c, ref, b, key=key: f"=IF(ISNUMBER({E['press_' + key]}),{E['press_' + key]},{ref(key + '_tonsRT')})", N0)
     line(f"{key}_cycle", "Cycle time (s)", lambda c, ref, b, wall=wall: f"={g['base']}+{g['k']}*{wall}^2")
     line(f"{key}_band", "Machine rate from band ($/hr)",
@@ -523,7 +523,7 @@ rows = [
     ("Projected area incl. runner (in²)", lambda k: f"={K(k + '_proj')}", N1),
     ("Rule-of-thumb clamp (US t)", lambda k: f"={K(k + '_tonsRT')}", N0),
     ("Rule-of-thumb clamp (metric t)", lambda k: f"={K(k + '_tonsRTm')}", N0),
-    ("Press used (US t)", lambda k: f"={K(k + '_tons')}", N0),
+    ("Press size (US t)", lambda k: f"={K(k + '_tons')}", N0),
     ("Machine + labor ($/hr)", lambda k: f"={K(k + '_rate')}+{K(k + '_laborHr')}", MONEY2),
     ("Cycle time (s)", lambda k: f"={K(k + '_cycle')}", N0),
     ("Molding", lambda k: f"={K(k + '_mold')}", MONEY),

@@ -148,7 +148,7 @@ table.ovr td .field { max-width: 92px; }
         </div>
       </div>
       <div class="group">
-        <p class="label">Labor (Durango placeholders)</p>
+        <p class="label">Labor (Mexico estimate)</p>
         <div class="grid4 one">
           <label for="labor"><span>Labor rate, $/hr loaded</span><input class="field" id="labor" type="number" step="0.25" min="0"></label>
           <label for="ops"><span>Operators per press</span><input class="field" id="ops" type="number" step="0.05" min="0"></label>
@@ -157,7 +157,7 @@ table.ovr td .field { max-width: 92px; }
       <div class="group">
         <p class="label">Press, machine rate and gate</p>
         <p class="hint" style="margin:0 0 6px">Leave blank to use the rule of thumb (grey) or the default gate type. Press in US tons; machine rate excludes labor.</p>
-        <div class="tbl-wrap"><table class="ovr"><thead><tr><th>Part</th><th>Press t</th><th>Machine $/hr</th><th>Gate / runner</th></tr></thead><tbody id="ovrRows"></tbody></table></div>
+        <div class="tbl-wrap"><table class="ovr"><thead><tr><th>Part</th><th>Press size, t</th><th>Machine $/hr</th><th>Gate / runner</th></tr></thead><tbody id="ovrRows"></tbody></table></div>
       </div>
       <div class="group">
         <label class="hint" for="cavities" style="margin:0 0 6px">Cavities per mold</label>
@@ -228,7 +228,7 @@ table.ovr td .field { max-width: 92px; }
     <div class="sect">
       <p class="label">Molding</p>
       <div class="grid4" id="moldFields"></div>
-      <p class="note">Cycle time = base + k × wall². Rule-of-thumb clamp (US t) = projected area (in²) × cavities × (1 + runner area %) × tons/in². This is the same as the metric form tonnes = area (cm²) × pressure (kgf/cm²) ÷ 1000 × cavities; 1 US t/in² = 140.6 kgf/cm². The press used is your entry, or the rule of thumb if blank. Machine rate comes from the band of the press used unless you override it. Molding cost per part = (machine + labor × operators) × cycle ÷ cavities. Material = part mass × (1 + runner volume %) × $/kg. Runner % comes from each part's gate / runner type. Band rates are North American placeholders; replace them with Durango rates.</p>
+      <p class="note">Cycle time = base + k × wall². Rule-of-thumb clamp (US t) = projected area (in²) × cavities × (1 + runner area %) × tons/in². This is the same as the metric form tonnes = area (cm²) × pressure (kgf/cm²) ÷ 1000 × cavities; 1 US t/in² = 140.6 kgf/cm². The press size is your entry, or the rule of thumb if blank. Machine rate comes from the band of the press size unless you override it. Molding cost per part = (machine + labor × operators) × cycle ÷ cavities. Material = part mass × (1 + runner volume %) × $/kg. Runner % comes from each part's gate / runner type. Labor and band rates are Mexico estimates; replace them with Durango numbers.</p>
     </div>
   </details>
 </div>
@@ -259,10 +259,10 @@ const EXAMPLE = {
   resins: { "PA66-GF30": [1.36, 3.8], "PBT-GF30": [1.53, 3.2], "PP-T20": [1.05, 1.8] },
   gates: { "Cold runner": [15, 15], "Hot-to-cold": [6, 5], "Hot runner": [1, 0] },   // runner vol %, area %
   gateDefault: "Cold runner",
-  mold: { base: 12, k: 2, clamp: 3.5, b1t: 300, b1r: 45, b2t: 500, b2r: 60, b3t: 800, b3r: 80, b4r: 110 },
-  labor: 6, ops: 0.5,
+  mold: { base: 12, k: 2, clamp: 3.5, b1t: 300, b1r: 31, b2t: 500, b2r: 42, b3t: 800, b3r: 56, b4r: 77 },   // Mexico estimates,
+  labor: 3.5, ops: 0.5,                                // Mexico estimate
   press: { housing: null, upper: null, lower: null },   // null = rule of thumb
-  mrate: { housing: null, upper: null, lower: null },   // null = band of the press used
+  mrate: { housing: null, upper: null, lower: null },   // null = band of the press size
   partGate: { housing: null, upper: null, lower: null },   // null = default gate type
   partResin: { housing: "PA66-GF30", upper: "PA66-GF30", lower: "PA66-GF30" },
 };
@@ -281,7 +281,7 @@ const MOLD_FIELDS = [
   ["b3t", "Band 3: press below, t", 10], ["b3r", "Band 3 machine, $/hr", 1], ["b4r", "Band 4 (above) machine, $/hr", 1],
 ];
 
-const STORE_KEY = "edc-estimator-v1.2";
+const STORE_KEY = "edc-estimator-v1.2-mx";   // new key so saved v1.2 state picks up the Mexico defaults
 const clone = (o) => JSON.parse(JSON.stringify(o));
 let S = clone(EXAMPLE);
 try {
@@ -390,7 +390,7 @@ function buildInputs() {
   $("moldFields").innerHTML = MOLD_FIELDS.map(([k, label, st]) =>
     `<label for="mold-${k}"><span>${label}</span><input class="field" id="mold-${k}" type="number" step="${st}" min="0" value="${S.mold[k]}"></label>`).join("");
   $("ovrRows").innerHTML = PART_KEYS.map(([k, n]) => `<tr><td>${n}</td>
-    <td><input class="field" id="press-${k}" type="number" step="10" min="0" value="${S.press[k] ?? ""}" aria-label="${n} press used, US tons"></td>
+    <td><input class="field" id="press-${k}" type="number" step="10" min="0" value="${S.press[k] ?? ""}" aria-label="${n} press size, US tons"></td>
     <td><input class="field" id="mrate-${k}" type="number" step="1" min="0" value="${S.mrate[k] ?? ""}" aria-label="${n} machine rate, $ per hour"></td>
     <td><select id="gate-${k}" aria-label="${n} gate / runner type"><option value=""${S.partGate[k] ? "" : " selected"}>Default</option>${GATES.map(g =>
       `<option${g === S.partGate[k] ? " selected" : ""}>${g}</option>`).join("")}</select></td></tr>`).join("");
@@ -526,7 +526,7 @@ function partCard(title, key, p) {
       <dt>Material*</dt><dd>${money(p.material)}</dd>
       <dt>Proj. area*</dt><dd>${f1(p.proj)} in²</dd>
       <dt>Clamp, rule</dt><dd>${f0(p.tonsRT)} t (${f0(p.tonsRTm)} mt)</dd>
-      <dt>Press used</dt><dd>${f0(p.tons)} t</dd>
+      <dt>Press size</dt><dd>${f0(p.tons)} t</dd>
       <dt>Cycle</dt><dd>${f0(p.cycle)} s</dd>
       <dt>$/hr</dt><dd>${f0(p.rate)} + ${f1(p.laborHr)} labor</dd>
       <dt>Molding</dt><dd>${money(p.molding)}</dd>
