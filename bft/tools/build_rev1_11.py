@@ -22,6 +22,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.hyperlink import Hyperlink
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -314,9 +315,25 @@ def bom_paste(wb, press):
 
 
 # ---------------------------------------------------------------- Start Here
+def insert_rows(ws, idx, n):
+    """insert_rows that keeps the tab hyperlinks with their cells (openpyxl leaves them behind)."""
+    links = []
+    for row in ws.iter_rows():
+        for c in row:
+            if c.hyperlink is not None:
+                links.append((c.row, c.column, copy.copy(c.hyperlink)))
+                c.hyperlink = None
+    ws._hyperlinks = []
+    ws.insert_rows(idx, n)
+    for r, col, h in links:
+        rr = r + n if r >= idx else r
+        h.ref = ws.cell(rr, col).coordinate
+        ws.cell(rr, col)._hyperlink = h
+
+
 def start_here(wb):
     ws = wb["Start Here"]
-    ws.insert_rows(12, 3)  # after the busbar steps, before the Busbar Sizer section
+    insert_rows(ws, 12, 3)  # after the busbar steps, before the Busbar Sizer section
     put(ws, "A12", "BOM roll-up (green tab: BOM Paste)", F_HEAD, HEAD_FILL)
     ws["B12"].fill = HEAD_FILL
     put(ws, "A13", 1)
@@ -324,8 +341,10 @@ def start_here(wb):
                    "calculator. Material and Machine + Labor are in F and G.", wrap=False)
     r = 29  # Strip Stock row moved from 24 to 27; add Resins after Fuse Library (29)
     assert ws["A29"].value == "Fuse Library", ws["A29"].value
-    ws.insert_rows(30, 1)
+    insert_rows(ws, 30, 1)
     put(ws, "A30", "Resins")
+    for ref, sheet in (("A13", "BOM Paste"), ("A30", "Resins")):
+        ws[ref]._hyperlink = Hyperlink(ref=ref, location=f"'{sheet}'!A1")
     put(ws, "B30", "Copied from the EDC estimator Rev1.30 (not linked). Paste the same material system export at M3; "
                    "new resins appear in the Estimator B8 resin list. Price and density come from here.")
     last = ws.max_row
